@@ -2,10 +2,12 @@ from flask import Flask, render_template, jsonify
 from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap5
 from wtforms import StringField, IntegerField, SubmitField
-from wtforms.validators import DataRequired, Length, NumberRange
+from wtforms.validators import DataRequired, Length, NumberRange, Regexp
 import time
 import atexit
 from apscheduler.schedulers.background import BackgroundScheduler
+import csv
+import os
 
 app = Flask(__name__)
 app.secret_key = 'tO$&!|0wkamvVia0?n$NqIRVWOG'
@@ -14,24 +16,48 @@ bootstrap = Bootstrap5(app)
 class Reservation:
     def __init__(self, name, minutes):
         self.name = name
-        self.minutes = minutes
+        self.minutes = int(minutes)
     def decreaseMinutes(self):
         self.minutes -= 1
     def jsonify(self):
         return {"name": self.name, "minutes": self.minutes}
+    def csvify(self):
+        return f"{self.name};{self.minutes}\n"
 
 class ReservationForm(FlaskForm):
-    name = StringField("Name", validators=[DataRequired(), Length(2, 40)])
-    minutes = IntegerField("Number of minutes", validators=[DataRequired(),NumberRange(min=1,max=120)])
+    name = StringField("Name", validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$")])
+    minutes = IntegerField("Number of minutes", validators=[DataRequired(), NumberRange(min=1, max=120)])
     submit = SubmitField("Reserve")
 
 current = None
 queue = []
+queueFile = "queue.csv"
+
+def UpdateQueueFromFile():
+    if os.path.exists(queueFile):
+        with open(queueFile, newline='') as csvfile:
+            reader = csv.reader(csvfile, delimiter=';')
+            queue.clear()
+            for row in reader:
+                if len(row) == 2:
+                    reservation = Reservation(row[0], row[1])
+                    queue.append(reservation)
+            UpdateCurrentFromQueue()
+
+def UpdateFileFromQueue():
+    global current, queue
+    file = open(queueFile, 'w')
+    if current != None:
+        file.write(current.csvify())
+    for reservation in queue:
+        file.write(reservation.csvify())
+
 
 def UpdateCurrentFromQueue():
     global current, queue
     if current is None and len(queue) != 0:
         current = queue.pop(0)
+        UpdateFileFromQueue()
 
 def UpdateCurrentTimer():
     global current
@@ -40,6 +66,7 @@ def UpdateCurrentTimer():
         if current.minutes == 0:
             current = None
             UpdateCurrentFromQueue()
+        UpdateFileFromQueue()
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -51,6 +78,7 @@ def index():
         queue.append(Reservation(name, minutes))
         if current is None:
             UpdateCurrentFromQueue()
+        UpdateFileFromQueue()
     return render_template('index.html', form=form)
 
 @app.route('/update_reserved', methods=['GET'])
@@ -74,6 +102,7 @@ def update_queue():
     return jsonify(jsonQueue)
 
 if __name__ == '__main__':
+    UpdateQueueFromFile()
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=UpdateCurrentTimer, trigger="interval", seconds=60)
     scheduler.start()
