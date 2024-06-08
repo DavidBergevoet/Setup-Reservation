@@ -64,22 +64,49 @@
         }
 
         function updateQueue() {
-            $.get('/update_queue', function(data) {
-                var queueDiv = document.getElementById('queue-div');
+        $.get('/update_queue', function(data) {
+            var queueDiv = document.getElementById('queue-div');
 
-                queueDiv.innerHTML = "";
-                var tbl = document.createElement('table');
-                var headerRow = tbl.insertRow();
-                headerRow.innerHTML += '<th min-width=100px>Name</th>';
-                headerRow.innerHTML += '<th min-width=100px>Minutes</th>';
+            queueDiv.innerHTML = "";
+            var tbl = document.createElement('table');
+            var headerRow = tbl.insertRow();
+            headerRow.innerHTML += '<th min-width=100px>Name</th>';
+            headerRow.innerHTML += '<th min-width=100px>Minutes</th>';
 
-                for (var i = 0; i < data.length; i++) {
-                    var nameRow = tbl.insertRow();
-                    nameRow.insertCell().appendChild(document.createTextNode(data[i].name));
-                    nameRow.insertCell().appendChild(document.createTextNode(data[i].minutes));
+            for (var i = 0; i < data.length; i++) {
+                var nameRow = tbl.insertRow();
+                nameRow.insertCell().appendChild(document.createTextNode(data[i].name));
+                nameRow.insertCell().appendChild(document.createTextNode(data[i].minutes));
+                if (data[i].canCancel) {
+                    (function(requestId) {
+                        var cancelButton = document.createElement('button');
+                        cancelButton.textContent = 'Cancel';
+                        cancelButton.addEventListener('click', function() {
+                            if (confirm("Cancel this request?")) {
+                                cancelRequest(requestId);
+                            }
+                        }, false);
+                        nameRow.insertCell().appendChild(cancelButton);
+                    })(data[i].id);
                 }
+            }
 
-                queueDiv.append(tbl);
+            queueDiv.append(tbl);
+        });
+    }
+
+
+        function cancelRequest(identifier) {
+            $.ajax({
+                url: '/cancel_request',
+                type: 'DELETE',
+                data: { id: identifier },
+                success: function(response) {
+                    update()
+                },
+                error: function(error) {
+                    console.error('Error cancelling request:', error);
+                }
             });
         }
 

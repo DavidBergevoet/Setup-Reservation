@@ -8,22 +8,31 @@ import atexit
 from apscheduler.schedulers.background import BackgroundScheduler
 import csv
 import os
+import uuid
 
 app = Flask(__name__)
 app.secret_key = 'tO$&!|0wkamvVia0?n$NqIRVWOG'
 bootstrap = Bootstrap5(app)
 
 class Reservation:
-    def __init__(self, name, minutes, ipAddress):
+    def __init__(self, name, minutes, ipAddress, requestId = None):
+        if requestId == None:
+            self.id = str(uuid.uuid4())
+        else:
+            self.id = requestId
         self.name = name
         self.minutes = int(minutes)
         self.ipAddress = ipAddress
     def decreaseMinutes(self):
         self.minutes -= 1
-    def jsonify(self):
-        return {"name": self.name, "minutes": self.minutes, "address": self.ipAddress}
+    def jsonify(self, requestIpAddress):
+        return {"name": self.name, 
+            "minutes": self.minutes, 
+            "address": self.ipAddress, 
+            "canCancel": self.ipAddress == requestIpAddress,
+            "id": self.id}
     def csvify(self):
-        return f"{self.name};{self.minutes};{self.ipAddress}\n"
+        return f"{self.name};{self.minutes};{self.ipAddress};{self.id}\n"
 
 class ReservationForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$")])
@@ -40,8 +49,8 @@ def UpdateQueueFromFile():
             reader = csv.reader(csvfile, delimiter=';')
             queue.clear()
             for row in reader:
-                if len(row) == 3:
-                    reservation = Reservation(row[0], row[1], row[2])
+                if len(row) == 4:
+                    reservation = Reservation(row[0], row[1], row[2], row[3])
                     queue.append(reservation)
             UpdateCurrentFromQueue()
 
@@ -94,13 +103,37 @@ def update_current():
     if current is None:
         return jsonify(None)
     else:
-        return jsonify(current.jsonify())
+        return jsonify(current.jsonify(request.remote_addr))
 
 @app.route('/update_queue', methods=['GET'])
 def update_queue():
     global queue
-    jsonQueue = [item.jsonify() for item in queue]
+    jsonQueue = [item.jsonify(request.remote_addr) for item in queue]
     return jsonify(jsonQueue)
+
+@app.route('/cancel_request', methods=['DELETE'])
+def cancel_request():
+    global current, queue
+    requestId = request.form.get('id')
+    requestIpAddress = request.remote_addr
+    requestExists = False
+
+    # Check if the current reservation is canceled
+    if current.ipAddress == requestIpAddress and current.id == requestId:
+        requestExists = True
+        current = None
+    else: # Check the queue for requests
+        for i in range(len(queue)):
+            if queue[i].ipAddress == requestIpAddress and queue[i].id == requestId:
+                requestExists = True
+                del queue[i]
+                break
+
+    if requestExists:
+        UpdateCurrentFromQueue()
+        return jsonify("Success"), 200
+    else:
+        return jsonify("Could not find reservation"), 404
 
 if __name__ == '__main__':
     UpdateQueueFromFile()
