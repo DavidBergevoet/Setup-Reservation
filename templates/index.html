@@ -26,9 +26,25 @@
             border-radius: 5px;
         }
         #queue-div {width: 100%; height:50%}
+        .form {
+            margin-top: 50px;
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        function generateCancelButton(identifier, parent) {
+            (function(requestId) {
+                var cancelButton = document.createElement('button');
+                cancelButton.textContent = 'Cancel';
+                cancelButton.addEventListener('click', function() {
+                    if (confirm("Cancel this request?")) {
+                        cancelRequest(requestId);
+                    }
+                }, false);
+                parent.appendChild(cancelButton);
+            })(identifier);
+        }
+
         function updateButton() {
             $.get('/update_reserved', function(data) {
                 if (data.reserved) {
@@ -54,6 +70,9 @@
                 var time = document.createElement('h3');
                 time.innerHTML = "Minutes left: " + data.minutes;
                 currentDiv.append(time);
+                if (data.canCancel) {
+                    generateCancelButton(data.id, currentDiv);
+                }
               }
               else
               {
@@ -64,36 +83,27 @@
         }
 
         function updateQueue() {
-        $.get('/update_queue', function(data) {
-            var queueDiv = document.getElementById('queue-div');
+            $.get('/update_queue', function(data) {
+                var queueDiv = document.getElementById('queue-div');
 
-            queueDiv.innerHTML = "";
-            var tbl = document.createElement('table');
-            var headerRow = tbl.insertRow();
-            headerRow.innerHTML += '<th min-width=100px>Name</th>';
-            headerRow.innerHTML += '<th min-width=100px>Minutes</th>';
+                queueDiv.innerHTML = "";
+                var tbl = document.createElement('table');
+                var headerRow = tbl.insertRow();
+                headerRow.innerHTML += '<th min-width=100px>Name</th>';
+                headerRow.innerHTML += '<th min-width=100px>Minutes</th>';
 
-            for (var i = 0; i < data.length; i++) {
-                var nameRow = tbl.insertRow();
-                nameRow.insertCell().appendChild(document.createTextNode(data[i].name));
-                nameRow.insertCell().appendChild(document.createTextNode(data[i].minutes));
-                if (data[i].canCancel) {
-                    (function(requestId) {
-                        var cancelButton = document.createElement('button');
-                        cancelButton.textContent = 'Cancel';
-                        cancelButton.addEventListener('click', function() {
-                            if (confirm("Cancel this request?")) {
-                                cancelRequest(requestId);
-                            }
-                        }, false);
-                        nameRow.insertCell().appendChild(cancelButton);
-                    })(data[i].id);
+                for (var i = 0; i < data.length; i++) {
+                    var nameRow = tbl.insertRow();
+                    nameRow.insertCell().appendChild(document.createTextNode(data[i].name));
+                    nameRow.insertCell().appendChild(document.createTextNode(data[i].minutes));
+                    if (data[i].canCancel) {
+                        generateCancelButton(data[i].id, nameRow.insertCell());
+                    }
                 }
-            }
 
-            queueDiv.append(tbl);
-        });
-    }
+                queueDiv.append(tbl);
+            });
+        }
 
 
         function cancelRequest(identifier) {

@@ -131,6 +131,7 @@ def cancel_request():
 
     if requestExists:
         UpdateCurrentFromQueue()
+        UpdateFileFromQueue()
         return jsonify("Success"), 200
     else:
         return jsonify("Could not find reservation"), 404
