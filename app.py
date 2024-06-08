@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap5
 from wtforms import StringField, IntegerField, SubmitField
@@ -14,15 +14,16 @@ app.secret_key = 'tO$&!|0wkamvVia0?n$NqIRVWOG'
 bootstrap = Bootstrap5(app)
 
 class Reservation:
-    def __init__(self, name, minutes):
+    def __init__(self, name, minutes, ipAddress):
         self.name = name
         self.minutes = int(minutes)
+        self.ipAddress = ipAddress
     def decreaseMinutes(self):
         self.minutes -= 1
     def jsonify(self):
-        return {"name": self.name, "minutes": self.minutes}
+        return {"name": self.name, "minutes": self.minutes, "address": self.ipAddress}
     def csvify(self):
-        return f"{self.name};{self.minutes}\n"
+        return f"{self.name};{self.minutes};{self.ipAddress}\n"
 
 class ReservationForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$")])
@@ -39,8 +40,8 @@ def UpdateQueueFromFile():
             reader = csv.reader(csvfile, delimiter=';')
             queue.clear()
             for row in reader:
-                if len(row) == 2:
-                    reservation = Reservation(row[0], row[1])
+                if len(row) == 3:
+                    reservation = Reservation(row[0], row[1], row[2])
                     queue.append(reservation)
             UpdateCurrentFromQueue()
 
@@ -51,7 +52,6 @@ def UpdateFileFromQueue():
         file.write(current.csvify())
     for reservation in queue:
         file.write(reservation.csvify())
-
 
 def UpdateCurrentFromQueue():
     global current, queue
@@ -75,7 +75,8 @@ def index():
     if form.validate_on_submit():
         name = form.name.data
         minutes = form.minutes.data
-        queue.append(Reservation(name, minutes))
+        ipAddress = request.remote_addr
+        queue.append(Reservation(name, minutes, ipAddress))
         if current is None:
             UpdateCurrentFromQueue()
         UpdateFileFromQueue()
