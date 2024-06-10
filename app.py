@@ -89,7 +89,9 @@ def index():
         if current is None:
             UpdateCurrentFromQueue()
         UpdateFileFromQueue()
-    return render_template('index.html', form=form)
+        return redirect("/")
+    else:
+        return render_template('index.html', form=form)
 
 @app.route('/update_reserved', methods=['GET'])
 def update_reserved():
