@@ -2,144 +2,428 @@
 
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Setup Corn</title>
     <style>
-        .reserved-button {
-            background-color: red;
-            color: white;
-            border: none;
-            padding: 10px 20px;
+        body {
+            font-family: 'Segoe UI', 'Liberation Sans', 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background: #f4f4f4;
+        }
+
+        .full-width-section {
+            background: white;
+            width: 100%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 2em 0;
+        }
+
+        .section-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 1em;
+        }
+
+        .availability {
             text-align: center;
-            font-size: 16px;
-            cursor: pointer;
+            margin-top: 0;
+        }
+
+        .availability .status {
+            font-size: 1.5em;
+            margin: 1em 0;
+            padding: 0.5em;
             border-radius: 5px;
         }
-        .available-button {
+
+        .status {
+            background-color: gray;
+            color: white;
+        }
+
+        .status.available {
             background-color: green;
             color: white;
-            border: none;
-            padding: 10px 20px;
+        }
+
+        .status.not-available {
+            background-color: red;
+            color: white;
+        }
+
+        .reservation-info {
+            margin-top: 1em;
+            font-size: 1em;
+            color: #333;
+            display: flex;
+            justify-content: center;
+        }
+
+        .reservation-info table {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 600px;
+            margin: auto;
+        }
+
+        .reservation-info th,
+        .reservation-info td {
+            border: 1px solid #ddd;
+            padding: 0.5em;
+            text-align: left;
+        }
+
+        .form-container {
+            max-width: 600px;
+            margin: 2em auto;
+            padding: 2em;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             text-align: center;
-            font-size: 16px;
+        }
+
+        .form-container form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-container form label {
+            text-align: left;
+            margin-bottom: 0.5em;
+            font-weight: bold;
+        }
+
+        .form-container form input {
+            margin-bottom: 1em;
+            padding: 0.5em;
+            font-size: 1em;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .form-container form input[type="submit"] {
+            background-color: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .form-container form input[type="submit"]:hover {
+            background-color: #555;
+        }
+
+        .reservations {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .reservations table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .reservations table,
+        .reservations th,
+        .reservations td {
+            border: 1px solid #ddd;
+        }
+
+        .reservations th,
+        .reservations td {
+            padding: 0.5em;
+            text-align: left;
+        }
+
+        .reservations .cancel-btn {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 0.5em;
             cursor: pointer;
             border-radius: 5px;
+            /* Rounded borders for buttons */
         }
-        #queue-div {width: 100%; height:50%}
-        .form {
-            margin-top: 50px;
+
+        .reservations .cancel-btn:hover {
+            background-color: #555;
+        }
+
+        .header-with-image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-with-image img {
+            max-width: 70px;
+            height: auto;
+            margin-right: 10px;
+        }
+
+        .header-with-image h2 {
+            font-size: 2em;
+        }
+
+        .center-text {
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .no-reservations {
+            font-size: 1.2em;
+            color: #555;
+            text-align: center;
+            padding: 2em 0;
+        }
+
+        @media (max-width: 600px) {
+
+            .reservation-info table,
+            .reservations table {
+                border: 0;
+            }
+
+            .reservation-info table thead,
+            .reservations table thead {
+                display: none;
+            }
+
+            .reservation-info table tr,
+            .reservations table tr {
+                margin-bottom: 1em;
+                display: block;
+                border-bottom: 2px solid #ddd;
+            }
+
+            .reservation-info table tr:last-child,
+            .reservations table tr:last-child {
+                margin-bottom: 0;
+            }
+
+            .reservation-info table td,
+            .reservations table td {
+                display: block;
+                text-align: right;
+                font-size: 0.8em;
+                border-bottom: 1px dotted #ccc;
+                padding: 0.5em;
+            }
+
+            .reservation-info table td:last-child,
+            .reservations table td:last-child {
+                border-bottom: 0;
+            }
+
+            .reservation-info table td:before,
+            .reservations table td:before {
+                content: attr(data-label);
+                float: left;
+                font-weight: bold;
+                text-transform: uppercase;
+            }
+
+            .reservations td[data-label="Action"]:before {
+                content: none;
+                /* Remove "Action" label for mobile view */
+            }
+
+            .reservations tr:last-child td[data-label="End Time"] {
+                border-bottom: 1px dotted #ccc;
+                /* Ensure End Time cell always has a dotted border */
+            }
         }
     </style>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="/static/js/jquery-3.6.0.min.js"></script>
     <script>
-        function generateCancelButton(identifier, parent) {
-            (function(requestId) {
-                var cancelButton = document.createElement('button');
-                cancelButton.textContent = 'Cancel';
-                cancelButton.addEventListener('click', function() {
-                    if (confirm("Cancel this request?")) {
-                        cancelRequest(requestId);
+        $(() => {
+            const roomStatus = $("#room-status");
+            const cancelReservationBtn = $("#cancel-reservation-btn");
+            const reservationInfo = $("#reservation-info");
+            const reservations = $(".reservations");
+            const reservationsBody = reservations.find('tbody');
+            const noReservationsMessage = $("#no-reservations-message");
+
+            cancelReservationBtn.on('click', () => {
+                if (cancelReservationBtn.hasClass("hidden") || !cancelReservationBtn.data('request-id')) {
+                    return;
+                }
+                if (confirm("Are you sure you want to cancel the active reservation?")) {
+                    cancelRequest(cancelReservationBtn.data('request-id'));
+                }
+            })
+
+            function updateCurrent() {
+                $.get('/update_current', function (data) {
+                    roomStatus.removeClass("not-available");
+                    roomStatus.removeClass("available");
+                    cancelReservationBtn.addClass("hidden");
+                    cancelReservationBtn.data('request-id', null);
+                    reservationInfo.addClass("hidden");
+
+                    if (data != null) {
+                        roomStatus.addClass("not-available");
+                        roomStatus.text("Setup is not available");
+                        reservationInfo.removeClass("hidden");
+                        reservationInfo.find('.name').text(data.name);
+                        reservationInfo.find('.time-left').text(data.minutes);
+                        cancelReservationBtn.data('request-id', data.id);
+
+                        if (data.canCancel) {
+                            cancelReservationBtn.removeClass("hidden");
+                        }
                     }
-                }, false);
-                parent.appendChild(cancelButton);
-            })(identifier);
-        }
-
-        function updateButton() {
-            $.get('/update_reserved', function(data) {
-                if (data.reserved) {
-                    $('#status-button').removeClass('available-button').addClass('reserved-button').text('Reserved');
-                } else {
-                    $('#status-button').removeClass('reserved-button').addClass('available-button').text('Available');
-                }
-            });
-        }
-
-        function updateCurrent() {
-            $.get('/update_current', function(data) {
-              var currentDiv = document.getElementById('current-div');
-              currentDiv.innerHTML = "";
-              var header = document.createElement('h1');
-              if(data != null) 
-              {
-                header.innerHTML = "Current user:";
-                currentDiv.append(header);
-                var user = document.createElement('h3');
-                user.innerHTML = "Name: " + data.name;
-                currentDiv.append(user);
-                var time = document.createElement('h3');
-                time.innerHTML = "Minutes left: " + data.minutes;
-                currentDiv.append(time);
-                if (data.canCancel) {
-                    generateCancelButton(data.id, currentDiv);
-                }
-              }
-              else
-              {
-                header.innerHTML = "No current user";
-                currentDiv.append(header);
-              }
-            });
-        }
-
-        function updateQueue() {
-            $.get('/update_queue', function(data) {
-                var queueDiv = document.getElementById('queue-div');
-
-                queueDiv.innerHTML = "";
-                var tbl = document.createElement('table');
-                var headerRow = tbl.insertRow();
-                headerRow.innerHTML += '<th min-width=100px>Name</th>';
-                headerRow.innerHTML += '<th min-width=100px>Minutes</th>';
-
-                for (var i = 0; i < data.length; i++) {
-                    var nameRow = tbl.insertRow();
-                    nameRow.insertCell().appendChild(document.createTextNode(data[i].name));
-                    nameRow.insertCell().appendChild(document.createTextNode(data[i].minutes));
-                    if (data[i].canCancel) {
-                        generateCancelButton(data[i].id, nameRow.insertCell());
+                    else {
+                        roomStatus.addClass("available");
+                        roomStatus.text("Setup is available");
                     }
-                }
+                });
+            }
 
-                queueDiv.append(tbl);
-            });
-        }
+            function updateQueue() {
+                $.get('/update_queue', function (data) {
+                    reservationsBody.empty();
+                    reservations.addClass("hidden");
+                    noReservationsMessage.addClass("hidden");
 
+                    if (data.length == 0) {
+                        noReservationsMessage.text("There are no upcoming reservations")
+                        noReservationsMessage.removeClass("hidden");
+                        return;
+                    }
 
-        function cancelRequest(identifier) {
-            $.ajax({
-                url: '/cancel_request',
-                type: 'DELETE',
-                data: { id: identifier },
-                success: function(response) {
-                    update()
-                },
-                error: function(error) {
-                    console.error('Error cancelling request:', error);
-                }
-            });
-        }
+                    reservations.removeClass("hidden");
 
-        function update(){
-            updateButton();
-            updateCurrent();
-            updateQueue();
-        }
+                    for (var i = 0; i < data.length; i++) {
+                        var reservation = data[i];
 
-        $(document).ready(function() {
+                        var tableRow = $("<tr>");
+
+                        var nameColumn = $("<td>");
+                        nameColumn.data('label', "Name");
+                        nameColumn.text(reservation.name);
+                        tableRow.append(nameColumn);
+
+                        var minutesColumn = $("<td>");
+                        minutesColumn.data('label', "Minutes left");
+                        minutesColumn.text(reservation.minutes);
+                        tableRow.append(minutesColumn);
+
+                        if (reservation.canCancel) {
+                            var cancelColumn = $("<td>");
+                            cancelColumn.data('label', "Action");
+                            var cancelButton = $("<button>Cancel</button>");
+                            cancelButton.addClass("cancel-btn");
+                            (function (reservation) {
+                                cancelButton.on('click', () => {
+                                    if (confirm("Are you sure you want to cancel this reservation?")) {
+                                        cancelRequest(reservation.id);
+                                    }
+                                })
+                            })(reservation)
+                            cancelColumn.append(cancelButton);
+                            tableRow.append(cancelColumn);
+                        }
+
+                        reservationsBody.append(tableRow);
+                    }
+                });
+            }
+
+            function cancelRequest(identifier) {
+                $.ajax({
+                    url: '/cancel_request',
+                    type: 'DELETE',
+                    data: { id: identifier },
+                    success: function (response) {
+                        update()
+                    },
+                    error: function (error) {
+                        console.error('Error cancelling request:', error);
+                    }
+                });
+            }
+
+            function update() {
+                updateCurrent();
+                updateQueue();
+            }
+
             update();
             setInterval(update, 10000);
-        });
+        })
     </script>
 </head>
+
 <body>
-    <button id="status-button" class="reserved-button">Reserved</button>
+    <section class="full-width-section">
+        <div class="section-content">
+            <div class="header-with-image">
+                <img src="/static/img/corn.png">
+                <h2>Test Setup Corn</h2>
+            </div>
+            <div class="availability">
+                <div class="status" id="room-status">Loading status...</div>
+                <div class="reservation-info hidden" id="reservation-info">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Minutes left</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="name" data-label="Name"></td>
+                                <td class="time-left" data-label="Minutes left"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button id="cancel-reservation-btn" class="hidden" onclick="cancelReservation()"
+                    style="margin-top: 1em; padding: 0.5em; font-size: 1em; background-color: #333; color: white; border: none; cursor: pointer; border-radius: 5px;">Cancel
+                    reservation</button>
+            </div>
+        </div>
+    </section>
 
-    <div id="current-div"></div>
+    <section class="form-container" id="reservation-form">
+        <h2>Make a reservation</h2>
+        <form method="post" role="form">
+            {{ form.hidden_tag() }}
+            {{ form.name.label }}
+            {{ form.name }}
+            {{ form.minutes.label }}
+            {{ form.minutes }}
+            {{ form.submit }}
+        </form>
+    </section>
 
-    {{ render_form(form) }}
-
-    <h1 style="margin-top:50px">Queue</h1>
-    <div id="queue-div"></div>
+    <section class="full-width-section">
+        <div class="section-content">
+            <h2 class="center-text">Upcoming Reservations</h2>
+            <div id="no-reservations-message" class="no-reservations">Loading upcoming reservations...</div>
+            <div class="reservations hidden">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Minutes left</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </body>
+
 </html>

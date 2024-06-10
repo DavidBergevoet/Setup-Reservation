@@ -136,6 +136,10 @@ def cancel_request():
     else:
         return jsonify("Could not find reservation"), 404
 
+@app.route('/static/<path:path>')
+def static_file(path):
+    return send_from_directory('static', path);
+
 if __name__ == '__main__':
     UpdateQueueFromFile()
     scheduler = BackgroundScheduler()
