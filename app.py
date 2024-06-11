@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, redirect, render_template, jsonify, request
 from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap5
 from wtforms import StringField, IntegerField, SubmitField
@@ -89,7 +89,9 @@ def index():
         if current is None:
             UpdateCurrentFromQueue()
         UpdateFileFromQueue()
-    return render_template('index.html', form=form)
+        return redirect("/")
+    else:
+        return render_template('index.html', form=form)
 
 @app.route('/update_reserved', methods=['GET'])
 def update_reserved():
