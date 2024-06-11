@@ -15,4 +15,10 @@ You can schedule time for test setup corn
 
 * Install neccesary packages
 
-`pip install Flask Flask-WTF bootstrap-flask APScheduler`
+`pip install -r requirements.txt`
+
+* Updating packages
+
+    If a new package is installed, this command should be run
+    
+    `pip freeze > requirements.txt`
