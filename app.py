@@ -81,6 +81,9 @@ def UpdateCurrentTimer():
 def RetrieveGitRevisionHash():
     return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
 
+def GitPull():
+    subprocess.check_output(['git', 'pull'])
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     global current
@@ -149,13 +152,13 @@ def static_file(path):
 @app.route('/version', methods=['GET'])
 def version_request():
     gitHash = RetrieveGitRevisionHash()
-    print(gitHash)
     return jsonify({"version": gitHash})
 
 if __name__ == '__main__':
     UpdateQueueFromFile()
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=UpdateCurrentTimer, trigger="interval", seconds=60)
+    scheduler.add_job(func=GitPull, trigger="interval", seconds=600)
     scheduler.start()
     atexit.register(lambda: scheduler.shutdown())
     app.run(host='0.0.0.0',debug=True)
