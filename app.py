@@ -150,7 +150,7 @@ def static_file(path):
     return send_from_directory('static', path)
 
 @app.route('/version', methods=['GET'])
-def version_request():asdasd
+def version_request():
     gitHash = RetrieveGitRevisionHash()
     return jsonify({"version": gitHash})
 
