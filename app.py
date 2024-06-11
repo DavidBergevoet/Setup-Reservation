@@ -51,7 +51,12 @@ def UpdateQueueFromFile():
             queue.clear()
             for row in reader:
                 if len(row) == 4:
-                    reservation = Reservation(row[0], row[1], row[2], row[3])
+                    name = row[0]
+                    minutes = row[1]
+                    ipAddress = row[2]
+                    requestId = row[3]
+
+                    reservation = Reservation(name, minutes, ipAddress, requestId)
                     queue.append(reservation)
             UpdateCurrentFromQueue()
 
