@@ -9,6 +9,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import csv
 import os
 import uuid
+import subprocess
 
 app = Flask(__name__)
 app.secret_key = 'tO$&!|0wkamvVia0?n$NqIRVWOG'
@@ -77,6 +78,12 @@ def UpdateCurrentTimer():
             UpdateCurrentFromQueue()
         UpdateFileFromQueue()
 
+def RetrieveGitRevisionHash():
+    return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+
+def GitPull():
+    subprocess.check_output(['git', 'pull'])
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     global current
@@ -121,7 +128,7 @@ def cancel_request():
     requestExists = False
 
     # Check if the current reservation is canceled
-    if current.ipAddress == requestIpAddress and current.id == requestId:
+    if current != None and current.ipAddress == requestIpAddress and current.id == requestId:
         requestExists = True
         current = None
     else: # Check the queue for requests
@@ -140,12 +147,18 @@ def cancel_request():
 
 @app.route('/static/<path:path>')
 def static_file(path):
-    return send_from_directory('static', path);
+    return send_from_directory('static', path)
+
+@app.route('/version', methods=['GET'])
+def version_request():
+    gitHash = RetrieveGitRevisionHash()
+    return jsonify({"version": gitHash})
 
 if __name__ == '__main__':
     UpdateQueueFromFile()
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=UpdateCurrentTimer, trigger="interval", seconds=60)
+    scheduler.add_job(func=GitPull, trigger="interval", seconds=600)
     scheduler.start()
     atexit.register(lambda: scheduler.shutdown())
     app.run(host='0.0.0.0',debug=True)

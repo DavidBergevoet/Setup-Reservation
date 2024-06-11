@@ -5,6 +5,7 @@ $(() => {
     const reservations = $(".reservations");
     const reservationsBody = reservations.find('tbody');
     const noReservationsMessage = $("#no-reservations-message");
+    var serverVersion = undefined;
 
     cancelReservationBtn.on('click', () => {
         if (cancelReservationBtn.hasClass("hidden") || !cancelReservationBtn.data('request-id')) {
@@ -92,6 +93,18 @@ $(() => {
         });
     }
 
+    function updateVersion() {
+        $.get('/version', function (data) {
+            if (serverVersion) {
+                if (serverVersion != data.version) {
+                    location.reload(true);
+                }
+            } else {
+                serverVersion = data.version;
+            }
+        });
+    }
+
     function cancelRequest(identifier) {
         $.ajax({
             url: '/cancel_request',
@@ -109,6 +122,7 @@ $(() => {
     function update() {
         updateCurrent();
         updateQueue();
+        updateVersion();
     }
 
     update();
