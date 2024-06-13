@@ -46,15 +46,17 @@
         <form method="post" role="form">
             {% for field, errors in form.errors.items() %}
             <div class="form-error">
-                {{ ', '.join(errors) <br>}}
+                {{ ', '.join(errors)}}
             </div>
             {% endfor %}
 
             {{ form.hidden_tag() }}
             {{ form.name.label }}
             {{ form.name }}
+            <small>*{{ form.name.description }}</small>
             {{ form.minutes.label }}
             {{ form.minutes }}
+            <small>*{{ form.minutes.description }}</small>
             {{ form.submit }}
         </form>
     </section>

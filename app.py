@@ -36,15 +36,17 @@ class Reservation:
             "id": self.id}
     def csvify(self):
         return f"{self.name};{self.minutes};{self.ipAddress};{self.id}\n"
-    def duration(self):
-        return self.minutes
 
 class ReservationForm(FlaskForm):
-    name = StringField("Name", validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$")])
-    minutes = IntegerField("Number of minutes", validators=[DataRequired(), NumberRange(min=1, max=MAX_RESERVATION_MINUTES)])
+    name = StringField("Name", 
+            validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$")],
+            description="Only alphanumeric characters allowed")
+    minutes = IntegerField("Number of minutes", 
+            validators=[DataRequired(), NumberRange(min=1, max=MAX_RESERVATION_MINUTES)], 
+            description="All the reservations can be a maximum of 60 minutes")
     submit = SubmitField("Reserve")
+    
     def validate_minutes(form, field):
-        global current, queue
         reserved_minutes = GetReservedMinutes(request.remote_addr)
         if reserved_minutes + int(field.data) > MAX_RESERVATION_MINUTES:
             raise ValidationError(f"You are only able to reserve a maximum amount of time of {MAX_RESERVATION_MINUTES} minutes.\n \
