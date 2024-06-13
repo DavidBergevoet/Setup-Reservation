@@ -231,3 +231,10 @@ body {
         /* Ensure End Time cell always has a dotted border */
     }
 }
+
+.form-error {
+    margin: 1em 0;
+    padding: 0.5em;
+    border-radius: 5px;
+    background-color: #ff8f8f;
+}

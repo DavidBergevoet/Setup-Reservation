@@ -2,7 +2,7 @@ from flask import Flask, redirect, render_template, jsonify, request
 from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap5
 from wtforms import StringField, IntegerField, SubmitField
-from wtforms.validators import DataRequired, Length, NumberRange, Regexp
+from wtforms.validators import DataRequired, Length, NumberRange, Regexp, ValidationError
 import time
 import atexit
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -14,6 +14,8 @@ import subprocess
 app = Flask(__name__)
 app.secret_key = 'tO$&!|0wkamvVia0?n$NqIRVWOG'
 bootstrap = Bootstrap5(app)
+
+MAX_RESERVATION_MINUTES = 60
 
 class Reservation:
     def __init__(self, name, minutes, ipAddress, requestId = None):
@@ -34,11 +36,20 @@ class Reservation:
             "id": self.id}
     def csvify(self):
         return f"{self.name};{self.minutes};{self.ipAddress};{self.id}\n"
+    def duration(self):
+        return self.minutes
 
 class ReservationForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$")])
-    minutes = IntegerField("Number of minutes", validators=[DataRequired(), NumberRange(min=1, max=120)])
+    minutes = IntegerField("Number of minutes", validators=[DataRequired(), NumberRange(min=1, max=MAX_RESERVATION_MINUTES)])
     submit = SubmitField("Reserve")
+    def validate_minutes(form, field):
+        global current, queue
+        reserved_minutes = GetReservedMinutes(request.remote_addr)
+        if reserved_minutes + int(field.data) > MAX_RESERVATION_MINUTES:
+            raise ValidationError(f"You are only able to reserve a maximum amount of time of {MAX_RESERVATION_MINUTES} minutes.\n \
+                You are able to reserve {MAX_RESERVATION_MINUTES - reserved_minutes} minutes")
+
 
 current = None
 queue = []
@@ -77,6 +88,16 @@ def UpdateCurrentTimer():
             current = None
             UpdateCurrentFromQueue()
         UpdateFileFromQueue()
+
+def GetReservedMinutes(address):
+    global current, queue
+    reserved_minutes = 0
+    if current != None and current.ipAddress == address:
+        reserved_minutes = current.minutes
+    for reservation in queue:
+        if reservation.ipAddress == address:
+            reserved_minutes += reservation.minutes
+    return reserved_minutes
 
 def RetrieveGitRevisionHash():
     return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()

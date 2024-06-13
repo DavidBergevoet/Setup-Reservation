@@ -44,6 +44,12 @@
     <section class="form-container" id="reservation-form">
         <h2>Make a reservation</h2>
         <form method="post" role="form">
+            {% for field, errors in form.errors.items() %}
+            <div class="form-error">
+                {{ ', '.join(errors) <br>}}
+            </div>
+            {% endfor %}
+
             {{ form.hidden_tag() }}
             {{ form.name.label }}
             {{ form.name }}
