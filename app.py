@@ -161,4 +161,4 @@ if __name__ == '__main__':
     scheduler.add_job(func=GitPull, trigger="interval", seconds=600)
     scheduler.start()
     atexit.register(lambda: scheduler.shutdown())
-    app.run(host='0.0.0.0',debug=True)
+    app.run(host='0.0.0.0',use_reloader=True)
