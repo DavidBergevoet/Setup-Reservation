@@ -10,13 +10,15 @@ import csv
 import os
 import uuid
 import subprocess
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = 'tO$&!|0wkamvVia0?n$NqIRVWOG'
 bootstrap = Bootstrap5(app)
+dateTimeFormat = '%Y-%m-%d %H:%M'
 
 class Reservation:
-    def __init__(self, name, minutes, ipAddress, requestId = None):
+    def __init__(self, name, minutes, ipAddress, startTime, endTime, requestId = None):
         if requestId == None:
             self.id = str(uuid.uuid4())
         else:
@@ -24,16 +26,23 @@ class Reservation:
         self.name = name
         self.minutes = int(minutes)
         self.ipAddress = ipAddress
-    def decreaseMinutes(self):
-        self.minutes -= 1
+        self.startTime = startTime
+        self.endTime = endTime
+    def isActive(self):
+        dateTimeNow = datetime.now()
+        return self.startTime <= dateTimeNow and self.endTime > dateTimeNow
+    def hasPassed(self):
+        return self.endTime <= datetime.now()
     def jsonify(self, requestIpAddress):
         return {"name": self.name, 
             "minutes": self.minutes, 
             "address": self.ipAddress, 
             "canCancel": self.ipAddress == requestIpAddress,
+            "startTime": self.startTime,
+            "endTime": self.endTime,
             "id": self.id}
     def csvify(self):
-        return f"{self.name};{self.minutes};{self.ipAddress};{self.id}\n"
+        return f"{self.name};{self.minutes};{self.ipAddress};{self.startTime.strftime(dateTimeFormat)};{self.endTime.strftime(dateTimeFormat)};{self.id}\n"
 
 class ReservationForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$")])
@@ -50,14 +59,17 @@ def UpdateQueueFromFile():
             reader = csv.reader(csvfile, delimiter=';')
             queue.clear()
             for row in reader:
-                if len(row) == 4:
+                if len(row) == 6:
                     name = row[0]
                     minutes = row[1]
                     ipAddress = row[2]
-                    requestId = row[3]
+                    startTime = datetime.strptime(row[3], dateTimeFormat)
+                    endTime = datetime.strptime(row[4], dateTimeFormat)
+                    requestId = row[5]
 
-                    reservation = Reservation(name, minutes, ipAddress, requestId)
+                    reservation = Reservation(name, minutes, ipAddress, startTime, endTime, requestId)
                     queue.append(reservation)
+            queue.sort(key=lambda x: x.startTime)
             UpdateCurrentFromQueue()
 
 def UpdateFileFromQueue():
@@ -71,17 +83,26 @@ def UpdateFileFromQueue():
 def UpdateCurrentFromQueue():
     global current, queue
     if current is None and len(queue) != 0:
-        current = queue.pop(0)
+        potentialCurrent = queue[0]
+
+        while potentialCurrent is not None and potentialCurrent.hasPassed():
+            queue = queue[1:]
+            if len(queue) != 0:
+                potentialCurrent = queue[0]
+            else:
+                potentialCurrent = None
+
+        if potentialCurrent is not None and potentialCurrent.isActive():
+            current = queue.pop(0)
         UpdateFileFromQueue()
 
 def UpdateCurrentTimer():
     global current
     if current is not None:
-        current.decreaseMinutes()
-        if current.minutes == 0:
+        if not current.isActive():
             current = None
             UpdateCurrentFromQueue()
-        UpdateFileFromQueue()
+            UpdateFileFromQueue()
 
 def RetrieveGitRevisionHash():
     return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
@@ -91,13 +112,24 @@ def GitPull():
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    global current
+    global current, queue
     form = ReservationForm()
     if form.validate_on_submit():
         name = form.name.data
         minutes = form.minutes.data
         ipAddress = request.remote_addr
-        queue.append(Reservation(name, minutes, ipAddress))
+
+        if len(queue) != 0:
+            startTime = queue[-1].endTime
+        else:
+            if current is not None:
+                startTime = current.endTime
+            else:
+                startTime = datetime.now()
+        startTime = startTime - timedelta(seconds = startTime.second, microseconds = startTime.microsecond)
+        endTime = startTime + timedelta(minutes = form.minutes.data)
+        queue.append(Reservation(name, minutes, ipAddress, startTime, endTime))
+        queue.sort(key=lambda x: x.startTime)
         if current is None:
             UpdateCurrentFromQueue()
         UpdateFileFromQueue()
@@ -162,7 +194,7 @@ def version_request():
 if __name__ == '__main__':
     UpdateQueueFromFile()
     scheduler = BackgroundScheduler()
-    scheduler.add_job(func=UpdateCurrentTimer, trigger="interval", seconds=60)
+    scheduler.add_job(func=UpdateCurrentTimer, trigger="interval", seconds=1)
     scheduler.add_job(func=GitPull, trigger="interval", seconds=600)
     scheduler.start()
     atexit.register(lambda: scheduler.shutdown())

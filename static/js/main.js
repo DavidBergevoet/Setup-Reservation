@@ -30,6 +30,8 @@ $(() => {
                 reservationInfo.removeClass("hidden");
                 reservationInfo.find('.name').text(data.name);
                 reservationInfo.find('.time-left').text(data.minutes);
+                reservationInfo.find('.start-time').text(data.startTime);
+                reservationInfo.find('.end-time').text(data.endTime);
                 cancelReservationBtn.data('request-id', data.id);
 
                 if (data.canCancel) {
@@ -71,6 +73,17 @@ $(() => {
                 minutesColumn.data('label', "Minutes left");
                 minutesColumn.text(reservation.minutes);
                 tableRow.append(minutesColumn);
+                
+                var startTimeColumn = $("<td>");
+                startTimeColumn.data('label', "Start time");
+                startTimeColumn.text(reservation.startTime);
+                tableRow.append(startTimeColumn);
+
+                
+                var endTimeColumn = $("<td>");
+                endTimeColumn.data('label', "End time");
+                endTimeColumn.text(reservation.endTime);
+                tableRow.append(endTimeColumn);
 
                 if (reservation.canCancel) {
                     var cancelColumn = $("<td>");
