@@ -29,7 +29,6 @@ $(() => {
                 roomStatus.text("Setup is not available");
                 reservationInfo.removeClass("hidden");
                 reservationInfo.find('.name').text(data.name);
-                reservationInfo.find('.time-left').text(data.minutes);
                 reservationInfo.find('.start-time').text(data.startTime);
                 reservationInfo.find('.end-time').text(data.endTime);
                 cancelReservationBtn.data('request-id', data.id);
@@ -68,11 +67,6 @@ $(() => {
                 nameColumn.data('label', "Name");
                 nameColumn.text(reservation.name);
                 tableRow.append(nameColumn);
-
-                var minutesColumn = $("<td>");
-                minutesColumn.data('label', "Minutes left");
-                minutesColumn.text(reservation.minutes);
-                tableRow.append(minutesColumn);
                 
                 var startTimeColumn = $("<td>");
                 startTimeColumn.data('label', "Start time");

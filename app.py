@@ -18,13 +18,12 @@ bootstrap = Bootstrap5(app)
 dateTimeFormat = '%Y-%m-%d %H:%M'
 
 class Reservation:
-    def __init__(self, name, minutes, ipAddress, startTime, endTime, requestId = None):
+    def __init__(self, name, ipAddress, startTime, endTime, requestId = None):
         if requestId == None:
             self.id = str(uuid.uuid4())
         else:
             self.id = requestId
         self.name = name
-        self.minutes = int(minutes)
         self.ipAddress = ipAddress
         self.startTime = startTime
         self.endTime = endTime
@@ -34,15 +33,14 @@ class Reservation:
     def hasPassed(self):
         return self.endTime <= datetime.now()
     def jsonify(self, requestIpAddress):
-        return {"name": self.name, 
-            "minutes": self.minutes, 
+        return {"name": self.name,
             "address": self.ipAddress, 
             "canCancel": self.ipAddress == requestIpAddress,
             "startTime": self.startTime,
             "endTime": self.endTime,
             "id": self.id}
     def csvify(self):
-        return f"{self.name};{self.minutes};{self.ipAddress};{self.startTime.strftime(dateTimeFormat)};{self.endTime.strftime(dateTimeFormat)};{self.id}\n"
+        return f"{self.name};{self.ipAddress};{self.startTime.strftime(dateTimeFormat)};{self.endTime.strftime(dateTimeFormat)};{self.id}\n"
 
 class ReservationForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$")])
@@ -61,13 +59,12 @@ def UpdateQueueFromFile():
             for row in reader:
                 if len(row) == 6:
                     name = row[0]
-                    minutes = row[1]
-                    ipAddress = row[2]
-                    startTime = datetime.strptime(row[3], dateTimeFormat)
-                    endTime = datetime.strptime(row[4], dateTimeFormat)
-                    requestId = row[5]
+                    ipAddress = row[1]
+                    startTime = datetime.strptime(row[2], dateTimeFormat)
+                    endTime = datetime.strptime(row[3], dateTimeFormat)
+                    requestId = row[4]
 
-                    reservation = Reservation(name, minutes, ipAddress, startTime, endTime, requestId)
+                    reservation = Reservation(name, ipAddress, startTime, endTime, requestId)
                     queue.append(reservation)
             queue.sort(key=lambda x: x.startTime)
             UpdateCurrentFromQueue()
@@ -116,7 +113,6 @@ def index():
     form = ReservationForm()
     if form.validate_on_submit():
         name = form.name.data
-        minutes = form.minutes.data
         ipAddress = request.remote_addr
 
         if len(queue) != 0:
@@ -128,7 +124,7 @@ def index():
                 startTime = datetime.now()
         startTime = startTime - timedelta(seconds = startTime.second, microseconds = startTime.microsecond)
         endTime = startTime + timedelta(minutes = form.minutes.data)
-        queue.append(Reservation(name, minutes, ipAddress, startTime, endTime))
+        queue.append(Reservation(name, ipAddress, startTime, endTime))
         queue.sort(key=lambda x: x.startTime)
         if current is None:
             UpdateCurrentFromQueue()
