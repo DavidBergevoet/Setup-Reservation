@@ -114,15 +114,39 @@ def index():
     if form.validate_on_submit():
         name = form.name.data
         ipAddress = request.remote_addr
-
-        if len(queue) != 0:
-            startTime = queue[-1].endTime
+        dateTimeNow = floorDateTime(datetime.now())
+        minutes = timedelta(minutes = form.minutes.data)
+        # If there are no reservations
+        if current is None and len(queue) == 0:
+            startTime = dateTimeNow
+        # If there is a current reservation, but none in the queue
+        elif len(queue) == 0:
+            startTime = current.endTime
+        # If there is no current reservation, and the new reservation will end before the first next reservation starts
+        elif current is None and dateTimeNow + minutes <= queue[0].startTime:
+            startTime = dateTimeNow
+        # If there is no current reservation, and there is only one reservation in the queue
+        elif current is None and len(queue) == 1:
+            startTime = queue[0].endTime
+        # If the new reservation would not fit between the current and the first reservation
         else:
-            if current is not None:
-                startTime = current.endTime
-            else:
-                startTime = datetime.now()
-        startTime = startTime - timedelta(seconds = startTime.second, microseconds = startTime.microsecond)
+            currentItem = queue[0]
+            nextIndex = 1
+            slotFound = False
+            queueLength = len(queue)
+
+            while nextIndex < queueLength and not slotFound:
+                # If the new reservation would fit between the currently selected reservation and the next reservation
+                if currentItem.endTime + minutes <= queue[nextIndex].startTime:
+                    startTime = currentItem.endTime
+                    slotFound = True
+                else:
+                    currentItem = queue[nextIndex]
+                    nextIndex += 1
+
+            if not slotFound:
+                startTime = queue[-1].endTime
+
         endTime = startTime + timedelta(minutes = form.minutes.data)
         queue.append(Reservation(name, ipAddress, startTime, endTime))
         queue.sort(key=lambda x: x.startTime)
@@ -132,6 +156,9 @@ def index():
         return redirect("/")
     else:
         return render_template('index.html', form=form)
+
+def floorDateTime(dateTime):
+    return dateTime - timedelta(seconds = dateTime.second, microseconds = dateTime.microsecond)
 
 @app.route('/update_reserved', methods=['GET'])
 def update_reserved():
