@@ -62,7 +62,7 @@ def UpdateQueueFromFile():
             reader = csv.reader(csvfile, delimiter=';')
             queue.clear()
             for row in reader:
-                if len(row) == 6:
+                if len(row) == 5:
                     name = row[0]
                     ipAddress = row[1]
                     startTime = datetime.strptime(row[2], dateTimeFormat)
@@ -85,6 +85,7 @@ def UpdateFileFromQueue():
 def UpdateCurrentFromQueue():
     global current, queue
     if current is None and len(queue) != 0:
+        queue.sort(key=lambda x: x.startTime)
         potentialCurrent = queue[0]
 
         while potentialCurrent is not None and potentialCurrent.hasPassed():
