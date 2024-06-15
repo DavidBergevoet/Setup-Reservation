@@ -35,11 +35,13 @@ class Reservation:
     def jsonify(self, requestIpAddress):
         timeDelta = self.endTime - datetime.now()
         minutes = timeDelta.days * 24 * 60 * 60 + timeDelta.seconds // 60
+        startTime = self.startTime.strftime("%H:%M")
+        endTime = self.endTime.strftime("%H:%M")
         return {"name": self.name,
             "address": self.ipAddress, 
             "canCancel": self.ipAddress == requestIpAddress,
-            "startTime": self.startTime,
-            "endTime": self.endTime,
+            "startTime": startTime,
+            "endTime": endTime,
             "minutes": minutes,
             "id": self.id}
     def csvify(self):
