@@ -31,6 +31,7 @@ $(() => {
                 reservationInfo.find('.name').text(data.name);
                 reservationInfo.find('.start-time').text(data.startTime);
                 reservationInfo.find('.end-time').text(data.endTime);
+                reservationInfo.find('.remaining-minutes').text(data.minutes);
                 cancelReservationBtn.data('request-id', data.id);
 
                 if (data.canCancel) {
