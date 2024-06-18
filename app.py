@@ -82,14 +82,17 @@ def UpdateFileFromQueue():
     for reservation in queue:
         file.write(reservation.csvify())
 
-def UpdateCurrentFromQueue():
+def UpdateCurrentFromQueue(updateFileFromQueue = True):
     global current, queue
     if current is None and len(queue) != 0:
         queue.sort(key=lambda x: x.startTime)
         potentialCurrent = queue[0]
 
+        shouldUpdateFile = False
+
         while potentialCurrent is not None and potentialCurrent.hasPassed():
             queue = queue[1:]
+            shouldUpdateFile = True
             if len(queue) != 0:
                 potentialCurrent = queue[0]
             else:
@@ -97,14 +100,17 @@ def UpdateCurrentFromQueue():
 
         if potentialCurrent is not None and potentialCurrent.isActive():
             current = queue.pop(0)
-        UpdateFileFromQueue()
+            shouldUpdateFile = True
+            
+        if shouldUpdateFile and updateFileFromQueue:
+            UpdateFileFromQueue()
 
 def UpdateCurrentTimer():
     global current
     if current is not None:
         if not current.isActive():
             current = None
-            UpdateCurrentFromQueue()
+            UpdateCurrentFromQueue(False)
             UpdateFileFromQueue()
 
 def RetrieveGitRevisionHash():
@@ -162,7 +168,7 @@ def index():
         queue.append(Reservation(name, ipAddress, startTime, endTime))
         queue.sort(key=lambda x: x.startTime)
         if current is None:
-            UpdateCurrentFromQueue()
+            UpdateCurrentFromQueue(False)
         UpdateFileFromQueue()
         return redirect("/")
     else:
@@ -210,7 +216,7 @@ def cancel_request():
                 break
 
     if requestExists:
-        UpdateCurrentFromQueue()
+        UpdateCurrentFromQueue(False)
         UpdateFileFromQueue()
         return jsonify("Success"), 200
     else:
