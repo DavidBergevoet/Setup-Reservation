@@ -136,8 +136,13 @@ def index():
             startTime = queue[0].endTime
         # If the new reservation would not fit between the current and the first reservation
         else:
-            currentItem = queue[0]
-            nextIndex = 1
+            if current is None:   
+                currentItem = queue[1]
+                nextIndex = 1
+            else:
+                currentItem = current
+                nextIndex = 0
+
             slotFound = False
             queueLength = len(queue)
 
