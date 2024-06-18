@@ -35,8 +35,8 @@ class Reservation:
     def jsonify(self, requestIpAddress):
         timeDelta = self.endTime - datetime.now()
         minutes = timeDelta.days * 24 * 60 * 60 + timeDelta.seconds // 60
-        startTime = self.startTime.strftime("%H:%M")
-        endTime = self.endTime.strftime("%H:%M")
+        startTime = self.startTime.strftime(dateTimeFormat)
+        endTime = self.endTime.strftime(dateTimeFormat)
         return {"name": self.name,
             "address": self.ipAddress, 
             "canCancel": self.ipAddress == requestIpAddress,

@@ -29,8 +29,8 @@ $(() => {
                 roomStatus.text("Setup is not available");
                 reservationInfo.removeClass("hidden");
                 reservationInfo.find('.name').text(data.name);
-                reservationInfo.find('.start-time').text(data.startTime);
-                reservationInfo.find('.end-time').text(data.endTime);
+                reservationInfo.find('.start-time').text(convertTimeString(data.startTime));
+                reservationInfo.find('.end-time').text(convertTimeString(data.endTime));
                 reservationInfo.find('.remaining-minutes').text(data.minutes);
                 cancelReservationBtn.data('request-id', data.id);
 
@@ -43,6 +43,16 @@ $(() => {
                 roomStatus.text("Setup is available");
             }
         });
+    }
+    
+    function convertTimeString(timeString) {
+        const date = new Date(timeString);
+        const locale = navigator.language;
+        const formattedTime = new Intl.DateTimeFormat(locale, {
+            timeStyle: "short"
+        }).format(date);
+
+        return formattedTime;
     }
 
     function updateQueue() {
@@ -71,13 +81,13 @@ $(() => {
                 
                 var startTimeColumn = $("<td>");
                 startTimeColumn.data('label', "Start time");
-                startTimeColumn.text(reservation.startTime);
+                startTimeColumn.text(convertTimeString(reservation.startTime));
                 tableRow.append(startTimeColumn);
 
                 
                 var endTimeColumn = $("<td>");
                 endTimeColumn.data('label', "End time");
-                endTimeColumn.text(reservation.endTime);
+                endTimeColumn.text(convertTimeString(reservation.endTime));
                 tableRow.append(endTimeColumn);
 
                 if (reservation.canCancel) {
