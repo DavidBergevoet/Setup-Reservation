@@ -48,6 +48,10 @@ class Reservation:
             "id": self.id}
     def csvify(self):
         return f"{self.name};{self.ipAddress};{self.startTime.strftime(dateTimeFormat)};{self.endTime.strftime(dateTimeFormat)};{self.id}\n"
+    def getMinutesReserved(self):
+        beginTime = self.startTime if datetime.now() < self.startTime else datetime.now()
+        timeDelta = self.endTime - beginTime
+        return timeDelta.days * 24 * 60 * 60 + timeDelta.seconds // 60
 
 class ReservationForm(FlaskForm):
     name = StringField("Name", 
@@ -130,10 +134,10 @@ def GetReservedMinutes(address):
     global current, queue
     reserved_minutes = 0
     if current != None and current.ipAddress == address:
-        reserved_minutes = current.minutes
+        reserved_minutes = current.getMinutesReserved()
     for reservation in queue:
         if reservation.ipAddress == address:
-            reserved_minutes += reservation.minutes
+            reserved_minutes += reservation.getMinutesReserved()
     return reserved_minutes
 
 def RetrieveGitRevisionHash():
