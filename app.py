@@ -10,32 +10,44 @@ import csv
 import os
 import uuid
 import subprocess
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = 'tO$&!|0wkamvVia0?n$NqIRVWOG'
 bootstrap = Bootstrap5(app)
+dateTimeFormat = '%Y-%m-%d %H:%M'
 
 MAX_RESERVATION_MINUTES = 60
 
 class Reservation:
-    def __init__(self, name, minutes, ipAddress, requestId = None):
+    def __init__(self, name, ipAddress, startTime, endTime, requestId = None):
         if requestId == None:
             self.id = str(uuid.uuid4())
         else:
             self.id = requestId
         self.name = name
-        self.minutes = int(minutes)
         self.ipAddress = ipAddress
-    def decreaseMinutes(self):
-        self.minutes -= 1
+        self.startTime = startTime
+        self.endTime = endTime
+    def isActive(self):
+        dateTimeNow = datetime.now()
+        return self.startTime <= dateTimeNow and self.endTime > dateTimeNow
+    def hasPassed(self):
+        return self.endTime <= datetime.now()
     def jsonify(self, requestIpAddress):
-        return {"name": self.name, 
-            "minutes": self.minutes, 
+        timeDelta = self.endTime - datetime.now()
+        minutes = timeDelta.days * 24 * 60 * 60 + timeDelta.seconds // 60
+        startTime = self.startTime.strftime(dateTimeFormat)
+        endTime = self.endTime.strftime(dateTimeFormat)
+        return {"name": self.name,
             "address": self.ipAddress, 
             "canCancel": self.ipAddress == requestIpAddress,
+            "startTime": startTime,
+            "endTime": endTime,
+            "minutes": minutes,
             "id": self.id}
     def csvify(self):
-        return f"{self.name};{self.minutes};{self.ipAddress};{self.id}\n"
+        return f"{self.name};{self.ipAddress};{self.startTime.strftime(dateTimeFormat)};{self.endTime.strftime(dateTimeFormat)};{self.id}\n"
 
 class ReservationForm(FlaskForm):
     name = StringField("Name", 
@@ -63,9 +75,16 @@ def UpdateQueueFromFile():
             reader = csv.reader(csvfile, delimiter=';')
             queue.clear()
             for row in reader:
-                if len(row) == 4:
-                    reservation = Reservation(row[0], row[1], row[2], row[3])
+                if len(row) == 5:
+                    name = row[0]
+                    ipAddress = row[1]
+                    startTime = datetime.strptime(row[2], dateTimeFormat)
+                    endTime = datetime.strptime(row[3], dateTimeFormat)
+                    requestId = row[4]
+
+                    reservation = Reservation(name, ipAddress, startTime, endTime, requestId)
                     queue.append(reservation)
+            queue.sort(key=lambda x: x.startTime)
             UpdateCurrentFromQueue()
 
 def UpdateFileFromQueue():
@@ -76,20 +95,36 @@ def UpdateFileFromQueue():
     for reservation in queue:
         file.write(reservation.csvify())
 
-def UpdateCurrentFromQueue():
+def UpdateCurrentFromQueue(updateFileFromQueue = True):
     global current, queue
     if current is None and len(queue) != 0:
-        current = queue.pop(0)
-        UpdateFileFromQueue()
+        queue.sort(key=lambda x: x.startTime)
+        potentialCurrent = queue[0]
+
+        shouldUpdateFile = False
+
+        while potentialCurrent is not None and potentialCurrent.hasPassed():
+            queue = queue[1:]
+            shouldUpdateFile = True
+            if len(queue) != 0:
+                potentialCurrent = queue[0]
+            else:
+                potentialCurrent = None
+
+        if potentialCurrent is not None and potentialCurrent.isActive():
+            current = queue.pop(0)
+            shouldUpdateFile = True
+            
+        if shouldUpdateFile and updateFileFromQueue:
+            UpdateFileFromQueue()
 
 def UpdateCurrentTimer():
     global current
     if current is not None:
-        current.decreaseMinutes()
-        if current.minutes == 0:
+        if not current.isActive():
             current = None
-            UpdateCurrentFromQueue()
-        UpdateFileFromQueue()
+            UpdateCurrentFromQueue(False)
+            UpdateFileFromQueue()
 
 def GetReservedMinutes(address):
     global current, queue
@@ -109,19 +144,61 @@ def GitPull():
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    global current
+    global current, queue
     form = ReservationForm()
     if form.validate_on_submit():
         name = form.name.data
-        minutes = form.minutes.data
         ipAddress = request.remote_addr
-        queue.append(Reservation(name, minutes, ipAddress))
+        dateTimeNow = floorDateTime(datetime.now())
+        minutes = timedelta(minutes = form.minutes.data)
+        # If there are no reservations
+        if current is None and len(queue) == 0:
+            startTime = dateTimeNow
+        # If there is a current reservation, but none in the queue
+        elif len(queue) == 0:
+            startTime = current.endTime
+        # If there is no current reservation, and the new reservation will end before the first next reservation starts
+        elif current is None and dateTimeNow + minutes <= queue[0].startTime:
+            startTime = dateTimeNow
+        # If there is no current reservation, and there is only one reservation in the queue
+        elif current is None and len(queue) == 1:
+            startTime = queue[0].endTime
+        # If the new reservation would not fit between the current and the first reservation
+        else:
+            if current is None:   
+                currentItem = queue[1]
+                nextIndex = 1
+            else:
+                currentItem = current
+                nextIndex = 0
+
+            slotFound = False
+            queueLength = len(queue)
+
+            while nextIndex < queueLength and not slotFound:
+                # If the new reservation would fit between the currently selected reservation and the next reservation
+                if currentItem.endTime + minutes <= queue[nextIndex].startTime:
+                    startTime = currentItem.endTime
+                    slotFound = True
+                else:
+                    currentItem = queue[nextIndex]
+                    nextIndex += 1
+
+            if not slotFound:
+                startTime = queue[-1].endTime
+
+        endTime = startTime + timedelta(minutes = form.minutes.data)
+        queue.append(Reservation(name, ipAddress, startTime, endTime))
+        queue.sort(key=lambda x: x.startTime)
         if current is None:
-            UpdateCurrentFromQueue()
+            UpdateCurrentFromQueue(False)
         UpdateFileFromQueue()
         return redirect("/")
     else:
         return render_template('index.html', form=form)
+
+def floorDateTime(dateTime):
+    return dateTime - timedelta(seconds = dateTime.second, microseconds = dateTime.microsecond)
 
 @app.route('/update_reserved', methods=['GET'])
 def update_reserved():
@@ -162,7 +239,7 @@ def cancel_request():
                 break
 
     if requestExists:
-        UpdateCurrentFromQueue()
+        UpdateCurrentFromQueue(False)
         UpdateFileFromQueue()
         return jsonify("Success"), 200
     else:
@@ -180,7 +257,7 @@ def version_request():
 if __name__ == '__main__':
     UpdateQueueFromFile()
     scheduler = BackgroundScheduler()
-    scheduler.add_job(func=UpdateCurrentTimer, trigger="interval", seconds=60)
+    scheduler.add_job(func=UpdateCurrentTimer, trigger="interval", seconds=1)
     scheduler.add_job(func=GitPull, trigger="interval", seconds=600)
     scheduler.start()
     atexit.register(lambda: scheduler.shutdown())
