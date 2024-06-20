@@ -59,7 +59,7 @@ class ReservationForm(FlaskForm):
             description="Only alphanumeric characters allowed")
     minutes = IntegerField("Number of minutes", 
             validators=[DataRequired(), NumberRange(min=1, max=MAX_RESERVATION_MINUTES)], 
-            description="All the reservations can be a maximum of 60 minutes")
+            description=f"All reservations combined can be a maximum of {MAX_RESERVATION_MINUTES} minutes")
     submit = SubmitField("Reserve")
     
     def validate_minutes(form, field):
