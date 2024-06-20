@@ -65,8 +65,8 @@ class ReservationForm(FlaskForm):
     def validate_minutes(form, field):
         reserved_minutes = GetReservedMinutes(request.remote_addr)
         if reserved_minutes + int(field.data) > MAX_RESERVATION_MINUTES:
-            raise ValidationError(f"You are only able to reserve a maximum amount of time of {MAX_RESERVATION_MINUTES} minutes.\n \
-                You are able to reserve {MAX_RESERVATION_MINUTES - reserved_minutes} minutes")
+            raise ValidationError(f"You are only able to reserve a combined amount of {MAX_RESERVATION_MINUTES} minute{"s" if MAX_RESERVATION_MINUTES == 1 else ""}.\n \
+                You are able to reserve {MAX_RESERVATION_MINUTES - reserved_minutes} more minute{"s" if MAX_RESERVATION_MINUTES - reserved_minutes == 1 else ""}")
 
 
 current = None
