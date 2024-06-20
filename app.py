@@ -17,7 +17,7 @@ app.secret_key = 'tO$&!|0wkamvVia0?n$NqIRVWOG'
 bootstrap = Bootstrap5(app)
 dateTimeFormat = '%Y-%m-%d %H:%M'
 
-MAX_RESERVATION_MINUTES = 60
+MAX_RESERVATION_TIME = 60
 
 class Reservation:
     def __init__(self, name, ipAddress, startTime, endTime, requestId = None):
@@ -58,15 +58,15 @@ class ReservationForm(FlaskForm):
             validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$")],
             description="Only alphanumeric characters allowed")
     minutes = IntegerField("Number of minutes", 
-            validators=[DataRequired(), NumberRange(min=1, max=MAX_RESERVATION_MINUTES)], 
-            description=f"All reservations combined can be a maximum of {MAX_RESERVATION_MINUTES} minutes")
+            validators=[DataRequired(), NumberRange(min=1, max=MAX_RESERVATION_TIME)], 
+            description=f"All reservations combined can be a maximum of {MAX_RESERVATION_TIME} minute{'s' if MAX_RESERVATION_TIME != 1 else ''}")
     submit = SubmitField("Reserve")
     
     def validate_minutes(form, field):
         reserved_minutes = GetReservedMinutes(request.remote_addr)
-        if reserved_minutes + int(field.data) > MAX_RESERVATION_MINUTES:
-            raise ValidationError(f"You are only able to reserve a combined amount of {MAX_RESERVATION_MINUTES} minute{"s" if MAX_RESERVATION_MINUTES == 1 else ""}.\n \
-                You are able to reserve {MAX_RESERVATION_MINUTES - reserved_minutes} more minute{"s" if MAX_RESERVATION_MINUTES - reserved_minutes == 1 else ""}")
+        if reserved_minutes + int(field.data) > MAX_RESERVATION_TIME:
+            raise ValidationError(f"You are only able to reserve a combined amount of {MAX_RESERVATION_TIME} minute{'s' if MAX_RESERVATION_TIME != 1 else ''}.\n \
+                You are able to reserve {MAX_RESERVATION_TIME - reserved_minutes} more minute{'s' if MAX_RESERVATION_TIME - reserved_minutes != 1 else ''}")
 
 
 current = None
