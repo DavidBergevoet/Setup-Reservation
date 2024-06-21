@@ -1,7 +1,6 @@
 from uuid import uuid4
 from datetime import datetime, timedelta
-
-_date_time_format = '%Y-%m-%d %H:%M'
+from entities import defines
 
 class Reservation:
     def __init__(self, name, ip_address, start_time, end_time, request_id = None):
@@ -24,8 +23,8 @@ class Reservation:
     def jsonify(self, request_ip_address):
         time_delta = self.end_time - datetime.now()
         minutes = time_delta.days * 24 * 60 * 60 + time_delta.seconds // 60
-        start_time = self.start_time.strftime(_date_time_format)
-        end_time = self.end_time.strftime(_date_time_format)
+        start_time = self.start_time.strftime(defines.DATETIME_FORMAT)
+        end_time = self.end_time.strftime(defines.DATETIME_FORMAT)
         return {"name": self.name,
             "address": self.ip_address, 
             "can_cancel": self.ip_address == request_ip_address,
@@ -35,7 +34,7 @@ class Reservation:
             "id": self.id}
 
     def csvify(self):
-        return f"{self.name};{self.ip_address};{self.start_time.strftime(_date_time_format)};{self.end_time.strftime(_date_time_format)};{self.id}\n"
+        return f"{self.name};{self.ip_address};{self.start_time.strftime(defines.DATETIME_FORMAT)};{self.end_time.strftime(defines.DATETIME_FORMAT)};{self.id}\n"
     
     def get_minutes_reserved(self):
         begin_time = self.start_time if datetime.now() < self.start_time else datetime.now()
