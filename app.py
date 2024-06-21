@@ -12,9 +12,13 @@ import uuid
 import subprocess
 from datetime import datetime, timedelta
 
-app = Flask(__name__)
-app.secret_key = 'tO$&!|0wkamvVia0?n$NqIRVWOG'
-bootstrap = Bootstrap5(app)
+# new imports
+from entities import application
+from os import path
+
+absolute_path = os.path.abspath('./')
+application.init(os.path.abspath(absolute_path))
+
 dateTimeFormat = '%Y-%m-%d %H:%M'
 
 MAX_RESERVATION_TIME = 60
@@ -146,7 +150,7 @@ def RetrieveGitRevisionHash():
 def GitPull():
     subprocess.check_output(['git', 'pull'])
 
-@app.route('/', methods=['GET', 'POST'])
+@application.app.route('/', methods=['GET', 'POST'])
 def index():
     global current, queue
     form = ReservationForm()
@@ -204,13 +208,13 @@ def index():
 def floorDateTime(dateTime):
     return dateTime - timedelta(seconds = dateTime.second, microseconds = dateTime.microsecond)
 
-@app.route('/update_reserved', methods=['GET'])
+@application.app.route('/update_reserved', methods=['GET'])
 def update_reserved():
     global current
     reserved = current is not None
     return jsonify(reserved=reserved)
 
-@app.route('/update_current', methods=['GET'])
+@application.app.route('/update_current', methods=['GET'])
 def update_current():
     global current
     if current is None:
@@ -218,13 +222,13 @@ def update_current():
     else:
         return jsonify(current.jsonify(request.remote_addr))
 
-@app.route('/update_queue', methods=['GET'])
+@application.app.route('/update_queue', methods=['GET'])
 def update_queue():
     global queue
     jsonQueue = [item.jsonify(request.remote_addr) for item in queue]
     return jsonify(jsonQueue)
 
-@app.route('/cancel_request', methods=['DELETE'])
+@application.app.route('/cancel_request', methods=['DELETE'])
 def cancel_request():
     global current, queue
     requestId = request.form.get('id')
@@ -249,11 +253,11 @@ def cancel_request():
     else:
         return jsonify("Could not find reservation"), 404
 
-@app.route('/static/<path:path>')
+@application.app.route('/static/<path:path>')
 def static_file(path):
-    return send_from_directory('static', path)
+    return send_from_directory(application.app.static_folder, path)
 
-@app.route('/version', methods=['GET'])
+@application.app.route('/version', methods=['GET'])
 def version_request():
     gitHash = RetrieveGitRevisionHash()
     return jsonify({"version": gitHash})
@@ -265,4 +269,4 @@ if __name__ == '__main__':
     scheduler.add_job(func=GitPull, trigger="interval", seconds=600)
     scheduler.start()
     atexit.register(lambda: scheduler.shutdown())
-    app.run(host='0.0.0.0',use_reloader=True)
+    application.run()
