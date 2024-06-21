@@ -55,8 +55,8 @@ class Reservation:
 
 class ReservationForm(FlaskForm):
     name = StringField("Name", 
-            validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$")],
-            description="Only alphanumeric characters allowed")
+            validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$", message="Name includes invalid characters. Only use alphanumeric characters and spaces")],
+            description="Only alphanumeric characters and spaces allowed")
     minutes = IntegerField("Number of minutes", 
             validators=[DataRequired(), NumberRange(min=1, max=MAX_RESERVATION_TIME)], 
             description=f"All reservations combined can be a maximum of {MAX_RESERVATION_TIME} minute{'s' if MAX_RESERVATION_TIME != 1 else ''}")
