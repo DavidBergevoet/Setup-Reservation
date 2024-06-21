@@ -17,6 +17,7 @@ from entities import application, defines
 from entities.reservation import Reservation
 from os import path
 from handlers.reservation_handler import ReservationHandler
+from handlers import version_handler
 
 absolute_path = os.path.abspath('./')
 application.init(os.path.abspath(absolute_path))
@@ -39,12 +40,6 @@ class ReservationForm(FlaskForm):
 
 queue_file = "queue.csv"
 reservation_handler = ReservationHandler(queue_file)
-
-def RetrieveGitRevisionHash():
-    return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
-
-def GitPull():
-    subprocess.check_output(['git', 'pull'])
 
 @application.app.route('/', methods=['GET', 'POST'])
 def index():
@@ -152,14 +147,14 @@ def static_file(path):
 
 @application.app.route('/version', methods=['GET'])
 def version_request():
-    gitHash = RetrieveGitRevisionHash()
+    gitHash = version_handler.retrieve_hash()
     return jsonify({"version": gitHash})
 
 if __name__ == '__main__':
     reservation_handler.from_file()
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=reservation_handler.update_time, trigger="interval", seconds=1)
-    scheduler.add_job(func=GitPull, trigger="interval", seconds=600)
+    scheduler.add_job(func=version_handler.update, trigger="interval", seconds=600)
     scheduler.start()
     atexit.register(lambda: scheduler.shutdown())
     application.run()
