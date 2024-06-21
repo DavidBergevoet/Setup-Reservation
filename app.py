@@ -2,7 +2,7 @@ from flask import Flask, redirect, render_template, jsonify, request
 from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap5
 from wtforms import StringField, IntegerField, SubmitField
-from wtforms.validators import DataRequired, Length, NumberRange, Regexp
+from wtforms.validators import DataRequired, Length, NumberRange, Regexp, ValidationError
 import time
 import atexit
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -16,6 +16,8 @@ app = Flask(__name__)
 app.secret_key = 'tO$&!|0wkamvVia0?n$NqIRVWOG'
 bootstrap = Bootstrap5(app)
 dateTimeFormat = '%Y-%m-%d %H:%M'
+
+MAX_RESERVATION_TIME = 60
 
 class Reservation:
     def __init__(self, name, ipAddress, startTime, endTime, requestId = None):
@@ -46,11 +48,26 @@ class Reservation:
             "id": self.id}
     def csvify(self):
         return f"{self.name};{self.ipAddress};{self.startTime.strftime(dateTimeFormat)};{self.endTime.strftime(dateTimeFormat)};{self.id}\n"
+    def getMinutesReserved(self):
+        beginTime = self.startTime if datetime.now() < self.startTime else datetime.now()
+        timeDelta = self.endTime - beginTime
+        return timeDelta.days * 24 * 60 * 60 + timeDelta.seconds // 60
 
 class ReservationForm(FlaskForm):
-    name = StringField("Name", validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$")])
-    minutes = IntegerField("Number of minutes", validators=[DataRequired(), NumberRange(min=1, max=120)])
+    name = StringField("Name", 
+            validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$", message="Name includes invalid characters. Only use alphanumeric characters and spaces")],
+            description="Only alphanumeric characters and spaces allowed")
+    minutes = IntegerField("Number of minutes", 
+            validators=[DataRequired(), NumberRange(min=1, max=MAX_RESERVATION_TIME)], 
+            description=f"All reservations combined can be a maximum of {MAX_RESERVATION_TIME} minute{'s' if MAX_RESERVATION_TIME != 1 else ''}")
     submit = SubmitField("Reserve")
+    
+    def validate_minutes(form, field):
+        reserved_minutes = GetReservedMinutes(request.remote_addr)
+        if reserved_minutes + int(field.data) > MAX_RESERVATION_TIME:
+            raise ValidationError(f"You are only able to reserve a combined amount of {MAX_RESERVATION_TIME} minute{'s' if MAX_RESERVATION_TIME != 1 else ''}.\n \
+                You are able to reserve {MAX_RESERVATION_TIME - reserved_minutes} more minute{'s' if MAX_RESERVATION_TIME - reserved_minutes != 1 else ''}")
+
 
 current = None
 queue = []
@@ -112,6 +129,16 @@ def UpdateCurrentTimer():
             current = None
             UpdateCurrentFromQueue(False)
             UpdateFileFromQueue()
+
+def GetReservedMinutes(address):
+    global current, queue
+    reserved_minutes = 0
+    if current != None and current.ipAddress == address:
+        reserved_minutes = current.getMinutesReserved()
+    for reservation in queue:
+        if reservation.ipAddress == address:
+            reserved_minutes += reservation.getMinutesReserved()
+    return reserved_minutes
 
 def RetrieveGitRevisionHash():
     return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
