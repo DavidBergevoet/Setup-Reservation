@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 
 # new imports
 from entities import application
+from entities.reservation import Reservation
 from os import path
 
 absolute_path = os.path.abspath('./')
@@ -22,40 +23,6 @@ application.init(os.path.abspath(absolute_path))
 dateTimeFormat = '%Y-%m-%d %H:%M'
 
 MAX_RESERVATION_TIME = 60
-
-class Reservation:
-    def __init__(self, name, ipAddress, startTime, endTime, requestId = None):
-        if requestId == None:
-            self.id = str(uuid.uuid4())
-        else:
-            self.id = requestId
-        self.name = name
-        self.ipAddress = ipAddress
-        self.startTime = startTime
-        self.endTime = endTime
-    def isActive(self):
-        dateTimeNow = datetime.now()
-        return self.startTime <= dateTimeNow and self.endTime > dateTimeNow
-    def hasPassed(self):
-        return self.endTime <= datetime.now()
-    def jsonify(self, requestIpAddress):
-        timeDelta = self.endTime - datetime.now()
-        minutes = timeDelta.days * 24 * 60 * 60 + timeDelta.seconds // 60
-        startTime = self.startTime.strftime(dateTimeFormat)
-        endTime = self.endTime.strftime(dateTimeFormat)
-        return {"name": self.name,
-            "address": self.ipAddress, 
-            "canCancel": self.ipAddress == requestIpAddress,
-            "startTime": startTime,
-            "endTime": endTime,
-            "minutes": minutes,
-            "id": self.id}
-    def csvify(self):
-        return f"{self.name};{self.ipAddress};{self.startTime.strftime(dateTimeFormat)};{self.endTime.strftime(dateTimeFormat)};{self.id}\n"
-    def getMinutesReserved(self):
-        beginTime = self.startTime if datetime.now() < self.startTime else datetime.now()
-        timeDelta = self.endTime - beginTime
-        return timeDelta.days * 24 * 60 * 60 + timeDelta.seconds // 60
 
 class ReservationForm(FlaskForm):
     name = StringField("Name", 
@@ -92,7 +59,7 @@ def UpdateQueueFromFile():
 
                     reservation = Reservation(name, ipAddress, startTime, endTime, requestId)
                     queue.append(reservation)
-            queue.sort(key=lambda x: x.startTime)
+            queue.sort(key=lambda x: x.start_time)
             UpdateCurrentFromQueue()
 
 def UpdateFileFromQueue():
@@ -106,12 +73,12 @@ def UpdateFileFromQueue():
 def UpdateCurrentFromQueue(updateFileFromQueue = True):
     global current, queue
     if current is None and len(queue) != 0:
-        queue.sort(key=lambda x: x.startTime)
+        queue.sort(key=lambda x: x.start_time)
         potentialCurrent = queue[0]
 
         shouldUpdateFile = False
 
-        while potentialCurrent is not None and potentialCurrent.hasPassed():
+        while potentialCurrent is not None and potentialCurrent.has_passed():
             queue = queue[1:]
             shouldUpdateFile = True
             if len(queue) != 0:
@@ -119,7 +86,7 @@ def UpdateCurrentFromQueue(updateFileFromQueue = True):
             else:
                 potentialCurrent = None
 
-        if potentialCurrent is not None and potentialCurrent.isActive():
+        if potentialCurrent is not None and potentialCurrent.is_active():
             current = queue.pop(0)
             shouldUpdateFile = True
             
@@ -129,7 +96,7 @@ def UpdateCurrentFromQueue(updateFileFromQueue = True):
 def UpdateCurrentTimer():
     global current
     if current is not None:
-        if not current.isActive():
+        if not current.is_active():
             current = None
             UpdateCurrentFromQueue(False)
             UpdateFileFromQueue()
@@ -137,11 +104,11 @@ def UpdateCurrentTimer():
 def GetReservedMinutes(address):
     global current, queue
     reserved_minutes = 0
-    if current != None and current.ipAddress == address:
-        reserved_minutes = current.getMinutesReserved()
+    if current != None and current.ip_address == address:
+        reserved_minutes = current.get_minutes_reserved()
     for reservation in queue:
-        if reservation.ipAddress == address:
-            reserved_minutes += reservation.getMinutesReserved()
+        if reservation.ip_address == address:
+            reserved_minutes += reservation.get_minutes_reserved()
     return reserved_minutes
 
 def RetrieveGitRevisionHash():
@@ -164,13 +131,13 @@ def index():
             startTime = dateTimeNow
         # If there is a current reservation, but none in the queue
         elif len(queue) == 0:
-            startTime = current.endTime
+            startTime = current.end_time
         # If there is no current reservation, and the new reservation will end before the first next reservation starts
-        elif current is None and dateTimeNow + minutes <= queue[0].startTime:
+        elif current is None and dateTimeNow + minutes <= queue[0].start_time:
             startTime = dateTimeNow
         # If there is no current reservation, and there is only one reservation in the queue
         elif current is None and len(queue) == 1:
-            startTime = queue[0].endTime
+            startTime = queue[0].end_time
         # If the new reservation would not fit between the current and the first reservation
         else:
             if current is None:   
@@ -185,19 +152,19 @@ def index():
 
             while nextIndex < queueLength and not slotFound:
                 # If the new reservation would fit between the currently selected reservation and the next reservation
-                if currentItem.endTime + minutes <= queue[nextIndex].startTime:
-                    startTime = currentItem.endTime
+                if currentItem.end_time + minutes <= queue[nextIndex].start_time:
+                    startTime = currentItem.end_time
                     slotFound = True
                 else:
                     currentItem = queue[nextIndex]
                     nextIndex += 1
 
             if not slotFound:
-                startTime = queue[-1].endTime
+                startTime = queue[-1].end_time
 
         endTime = startTime + timedelta(minutes = form.minutes.data)
         queue.append(Reservation(name, ipAddress, startTime, endTime))
-        queue.sort(key=lambda x: x.startTime)
+        queue.sort(key=lambda x: x.start_time)
         if current is None:
             UpdateCurrentFromQueue(False)
         UpdateFileFromQueue()
@@ -236,12 +203,12 @@ def cancel_request():
     requestExists = False
 
     # Check if the current reservation is canceled
-    if current != None and current.ipAddress == requestIpAddress and current.id == requestId:
+    if current != None and current.ip_address == requestIpAddress and current.id == requestId:
         requestExists = True
         current = None
     else: # Check the queue for requests
         for i in range(len(queue)):
-            if queue[i].ipAddress == requestIpAddress and queue[i].id == requestId:
+            if queue[i].ip_address == requestIpAddress and queue[i].id == requestId:
                 requestExists = True
                 del queue[i]
                 break

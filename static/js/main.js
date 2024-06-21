@@ -29,12 +29,12 @@ $(() => {
                 roomStatus.text("Setup is not available");
                 reservationInfo.removeClass("hidden");
                 reservationInfo.find('.name').text(data.name);
-                reservationInfo.find('.start-time').text(convertTimeString(data.startTime));
-                reservationInfo.find('.end-time').text(convertTimeString(data.endTime));
+                reservationInfo.find('.start-time').text(convertTimeString(data.start_time));
+                reservationInfo.find('.end-time').text(convertTimeString(data.end_time));
                 reservationInfo.find('.remaining-minutes').text(data.minutes);
                 cancelReservationBtn.data('request-id', data.id);
 
-                if (data.canCancel) {
+                if (data.can_cancel) {
                     cancelReservationBtn.removeClass("hidden");
                 }
             }
@@ -81,16 +81,16 @@ $(() => {
                 
                 var startTimeColumn = $("<td>");
                 startTimeColumn.data('label', "Start time");
-                startTimeColumn.text(convertTimeString(reservation.startTime));
+                startTimeColumn.text(convertTimeString(reservation.start_time));
                 tableRow.append(startTimeColumn);
 
                 
                 var endTimeColumn = $("<td>");
                 endTimeColumn.data('label', "End time");
-                endTimeColumn.text(convertTimeString(reservation.endTime));
+                endTimeColumn.text(convertTimeString(reservation.end_time));
                 tableRow.append(endTimeColumn);
 
-                if (reservation.canCancel) {
+                if (reservation.can_cancel) {
                     var cancelColumn = $("<td>");
                     cancelColumn.data('label', "Action");
                     var cancelButton = $("<button>Cancel</button>");
