@@ -74,3 +74,5 @@ class ReservationHandler:
 			if reservation.ip_address == address:
 				reserved_minutes += reservation.get_minutes_reserved()
 		return reserved_minutes
+
+reservation_handler = ReservationHandler('queue.csv')
