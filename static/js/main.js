@@ -17,7 +17,7 @@ $(() => {
     })
 
     function updateCurrent() {
-        $.get('/update_current', function (data) {
+        $.get('/api/update_current', function (data) {
             roomStatus.removeClass("not-available");
             roomStatus.removeClass("available");
             cancelReservationBtn.addClass("hidden");
@@ -56,7 +56,7 @@ $(() => {
     }
 
     function updateQueue() {
-        $.get('/update_queue', function (data) {
+        $.get('/api/update_queue', function (data) {
             reservationsBody.empty();
             reservations.addClass("hidden");
             noReservationsMessage.addClass("hidden");
@@ -112,7 +112,7 @@ $(() => {
     }
 
     function updateVersion() {
-        $.get('/version', function (data) {
+        $.get('/api/version', function (data) {
             if (serverVersion) {
                 if (serverVersion != data.version) {
                     location.reload(true);
@@ -125,7 +125,7 @@ $(() => {
 
     function cancelRequest(identifier) {
         $.ajax({
-            url: '/cancel_request',
+            url: '/api/cancel_request',
             type: 'DELETE',
             data: { id: identifier },
             success: function (response) {
