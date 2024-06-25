@@ -45,7 +45,7 @@ class ReservationHandler:
 			should_update_file = False
 
 			while potential_current is not None and potential_current.has_passed():
-				self.queue = queue[1:]
+				self.queue = self.queue[1:]
 				should_update_file = True
 				if len(self.queue) != 0:
 					potential_current = self.queue[0]
