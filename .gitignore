@@ -1,3 +1,7 @@
 .venv/
-*.csv
 __pycache__/
+
+# Client specific files
+*.csv
+static/title_images
+config.json

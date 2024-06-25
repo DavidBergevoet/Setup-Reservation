@@ -1,0 +1,6 @@
+{
+  "name": "Example",
+  "maximum_minutes": 60,
+  "queue_file_path": "example_queue.csv",
+  "title_image": "example.png"
+}
