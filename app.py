@@ -19,7 +19,7 @@ if __name__ == '__main__':
     reservation_handler.from_file()
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=reservation_handler.update_time, trigger="interval", seconds=1)
-    scheduler.add_job(func=version_handler.update, trigger="interval", seconds=600)
+    scheduler.add_job(func=version_handler.update, trigger="interval", minutes=10)
     scheduler.start()
     register(lambda: scheduler.shutdown())
     application.run()
