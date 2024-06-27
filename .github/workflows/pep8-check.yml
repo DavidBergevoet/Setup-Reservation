@@ -1,0 +1,26 @@
+name: PEP8 Check
+
+on:
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  pep8_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: pip install autopep8
+
+      - name: Run autopep8
+        run: autopep8 --recursive --diff .
+
+      - name: Violations check
+        run: |
+          if [[ -n $(git diff --name-only) ]]; then
+            echo "PEP8 violations found. Please fix the code with 'autopep8 --in-place --recursive .'"
+            exit 1
+          fi
