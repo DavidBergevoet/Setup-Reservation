@@ -5,12 +5,13 @@ from datetime import datetime, timedelta
 from entities import defines
 
 class ReservationHandler:
-	def __init__(self, queue_file_path):
-		self.queue_file_path = queue_file_path
+	def __init__(self):
+		self.queue_file_path = None
 		self.queue = []
 		self.current = None
 
-	def from_file(self):
+	def from_file(self, queue_file_path):
+		self.queue_file_path = queue_file_path
 		if path.exists(self.queue_file_path):
 			with open(self.queue_file_path, newline='') as csv_file:
 				csv_reader = reader(csv_file, delimiter=';')
@@ -75,4 +76,4 @@ class ReservationHandler:
 				reserved_minutes += reservation.get_minutes_reserved()
 		return reserved_minutes
 
-reservation_handler = ReservationHandler('queue.csv')
+reservation_handler = ReservationHandler()

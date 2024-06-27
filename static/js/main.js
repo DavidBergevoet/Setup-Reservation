@@ -31,7 +31,12 @@ $(() => {
                 reservationInfo.find('.name').text(data.name);
                 reservationInfo.find('.start-time').text(convertTimeString(data.start_time));
                 reservationInfo.find('.end-time').text(convertTimeString(data.end_time));
-                reservationInfo.find('.remaining-minutes').text(data.minutes);
+                if (data.minutes == 0) {
+                    reservationInfo.find('.remaining-minutes').text('Less than 1 minute')
+                }
+                else {
+                    reservationInfo.find('.remaining-minutes').text(data.minutes);
+                }
                 cancelReservationBtn.data('request-id', data.id);
 
                 if (data.can_cancel) {
@@ -137,12 +142,19 @@ $(() => {
         });
     }
 
+    function requestSetups() {
+        $.get('/api/setups', function(data) {
+            document.getElementById('setup-name').innerHTML = data["name"];
+            document.getElementById('setup-icon').src = "/static/title_images/" + data["title_image"];
+        });
+    }
+
     function update() {
         updateCurrent();
         updateQueue();
         updateVersion();
     }
-
+    requestSetups();
     update();
     setInterval(update, 10000);
 })
