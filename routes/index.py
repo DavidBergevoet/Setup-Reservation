@@ -4,6 +4,7 @@ from entities import defines
 from entities.reservation import Reservation
 from entities.reservation_form import ReservationForm
 from handlers.reservation_handler import reservation_handler
+from handlers.config_handler import configuration_handler
 
 def index():
     form = ReservationForm()
@@ -56,4 +57,8 @@ def index():
         reservation_handler.to_file()
         return redirect("/")
     else:
-        return render_template('index.html', form=form)
+        return render_template('index.html', 
+            form=form, 
+            title=configuration_handler.title(),
+            setup_name=configuration_handler.name(),
+            setup_image=configuration_handler.title_image())

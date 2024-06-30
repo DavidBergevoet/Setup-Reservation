@@ -1,7 +1,7 @@
 from handlers import version_handler, config_handler, reservation_handler
 from entities import application
 from os import path
-from routes import pages
+from routes import content
 from routes.api import api
 from atexit import register
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -16,7 +16,7 @@ config_handler.configuration_handler.load(config_path)
 application.init(path.abspath(absolute_path))
 
 # Initialize routes
-pages.init()
+content.init()
 api.init()
 
 if __name__ == '__main__':

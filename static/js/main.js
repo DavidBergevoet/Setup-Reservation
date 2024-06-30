@@ -142,19 +142,11 @@ $(() => {
         });
     }
 
-    function requestSetups() {
-        $.get('/api/setups', function(data) {
-            document.getElementById('setup-name').innerHTML = data["name"];
-            document.getElementById('setup-icon').src = "/static/title_images/" + data["title_image"];
-        });
-    }
-
     function update() {
         updateCurrent();
         updateQueue();
         updateVersion();
     }
-    requestSetups();
     update();
     setInterval(update, 10000);
 })
