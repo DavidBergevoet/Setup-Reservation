@@ -19,8 +19,9 @@ dateTimeFormat = '%Y-%m-%d %H:%M'
 
 MAX_RESERVATION_TIME = 60
 
+
 class Reservation:
-    def __init__(self, name, ipAddress, startTime, endTime, requestId = None):
+    def __init__(self, name, ipAddress, startTime, endTime, requestId=None):
         if requestId == None:
             self.id = str(uuid.uuid4())
         else:
@@ -29,39 +30,47 @@ class Reservation:
         self.ipAddress = ipAddress
         self.startTime = startTime
         self.endTime = endTime
+
     def isActive(self):
         dateTimeNow = datetime.now()
         return self.startTime <= dateTimeNow and self.endTime > dateTimeNow
+
     def hasPassed(self):
         return self.endTime <= datetime.now()
+
     def jsonify(self, requestIpAddress):
         timeDelta = self.endTime - datetime.now()
         minutes = timeDelta.days * 24 * 60 * 60 + timeDelta.seconds // 60
         startTime = self.startTime.strftime(dateTimeFormat)
         endTime = self.endTime.strftime(dateTimeFormat)
         return {"name": self.name,
-            "address": self.ipAddress, 
-            "canCancel": self.ipAddress == requestIpAddress,
-            "startTime": startTime,
-            "endTime": endTime,
-            "minutes": minutes,
-            "id": self.id}
+                "address": self.ipAddress,
+                "canCancel": self.ipAddress == requestIpAddress,
+                "startTime": startTime,
+                "endTime": endTime,
+                "minutes": minutes,
+                "id": self.id}
+
     def csvify(self):
         return f"{self.name};{self.ipAddress};{self.startTime.strftime(dateTimeFormat)};{self.endTime.strftime(dateTimeFormat)};{self.id}\n"
+
     def getMinutesReserved(self):
         beginTime = self.startTime if datetime.now() < self.startTime else datetime.now()
         timeDelta = self.endTime - beginTime
         return timeDelta.days * 24 * 60 * 60 + timeDelta.seconds // 60
 
+
 class ReservationForm(FlaskForm):
-    name = StringField("Name", 
-            validators=[DataRequired(), Length(2, 40), Regexp("^[a-zA-Z0-9 ]*$", message="Name includes invalid characters. Only use alphanumeric characters and spaces")],
-            description="Only alphanumeric characters and spaces allowed")
-    minutes = IntegerField("Number of minutes", 
-            validators=[DataRequired(), NumberRange(min=1, max=MAX_RESERVATION_TIME)], 
-            description=f"All reservations combined can be a maximum of {MAX_RESERVATION_TIME} minute{'s' if MAX_RESERVATION_TIME != 1 else ''}")
+    name = StringField("Name",
+                       validators=[DataRequired(), Length(2, 40), Regexp(
+                           "^[a-zA-Z0-9 ]*$", message="Name includes invalid characters. Only use alphanumeric characters and spaces")],
+                       description="Only alphanumeric characters and spaces allowed")
+    minutes = IntegerField("Number of minutes",
+                           validators=[DataRequired(), NumberRange(
+                               min=1, max=MAX_RESERVATION_TIME)],
+                           description=f"All reservations combined can be a maximum of {MAX_RESERVATION_TIME} minute{'s' if MAX_RESERVATION_TIME != 1 else ''}")
     submit = SubmitField("Reserve")
-    
+
     def validate_minutes(form, field):
         reserved_minutes = GetReservedMinutes(request.remote_addr)
         if reserved_minutes + int(field.data) > MAX_RESERVATION_TIME:
@@ -72,6 +81,7 @@ class ReservationForm(FlaskForm):
 current = None
 queue = []
 queueFile = "queue.csv"
+
 
 def UpdateQueueFromFile():
     if os.path.exists(queueFile):
@@ -86,10 +96,12 @@ def UpdateQueueFromFile():
                     endTime = datetime.strptime(row[3], dateTimeFormat)
                     requestId = row[4]
 
-                    reservation = Reservation(name, ipAddress, startTime, endTime, requestId)
+                    reservation = Reservation(
+                        name, ipAddress, startTime, endTime, requestId)
                     queue.append(reservation)
             queue.sort(key=lambda x: x.startTime)
             UpdateCurrentFromQueue()
+
 
 def UpdateFileFromQueue():
     global current, queue
@@ -99,7 +111,8 @@ def UpdateFileFromQueue():
     for reservation in queue:
         file.write(reservation.csvify())
 
-def UpdateCurrentFromQueue(updateFileFromQueue = True):
+
+def UpdateCurrentFromQueue(updateFileFromQueue=True):
     global current, queue
     if current is None and len(queue) != 0:
         queue.sort(key=lambda x: x.startTime)
@@ -118,9 +131,10 @@ def UpdateCurrentFromQueue(updateFileFromQueue = True):
         if potentialCurrent is not None and potentialCurrent.isActive():
             current = queue.pop(0)
             shouldUpdateFile = True
-            
+
         if shouldUpdateFile and updateFileFromQueue:
             UpdateFileFromQueue()
+
 
 def UpdateCurrentTimer():
     global current
@@ -129,6 +143,7 @@ def UpdateCurrentTimer():
             current = None
             UpdateCurrentFromQueue(False)
             UpdateFileFromQueue()
+
 
 def GetReservedMinutes(address):
     global current, queue
@@ -140,11 +155,14 @@ def GetReservedMinutes(address):
             reserved_minutes += reservation.getMinutesReserved()
     return reserved_minutes
 
+
 def RetrieveGitRevisionHash():
     return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
 
+
 def GitPull():
     subprocess.check_output(['git', 'pull'])
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -154,7 +172,7 @@ def index():
         name = form.name.data
         ipAddress = request.remote_addr
         dateTimeNow = floorDateTime(datetime.now())
-        minutes = timedelta(minutes = form.minutes.data)
+        minutes = timedelta(minutes=form.minutes.data)
         # If there are no reservations
         if current is None and len(queue) == 0:
             startTime = dateTimeNow
@@ -169,7 +187,7 @@ def index():
             startTime = queue[0].endTime
         # If the new reservation would not fit between the current and the first reservation
         else:
-            if current is None:   
+            if current is None:
                 currentItem = queue[1]
                 nextIndex = 1
             else:
@@ -191,7 +209,7 @@ def index():
             if not slotFound:
                 startTime = queue[-1].endTime
 
-        endTime = startTime + timedelta(minutes = form.minutes.data)
+        endTime = startTime + timedelta(minutes=form.minutes.data)
         queue.append(Reservation(name, ipAddress, startTime, endTime))
         queue.sort(key=lambda x: x.startTime)
         if current is None:
@@ -201,14 +219,17 @@ def index():
     else:
         return render_template('index.html', form=form)
 
+
 def floorDateTime(dateTime):
-    return dateTime - timedelta(seconds = dateTime.second, microseconds = dateTime.microsecond)
+    return dateTime - timedelta(seconds=dateTime.second, microseconds=dateTime.microsecond)
+
 
 @app.route('/update_reserved', methods=['GET'])
 def update_reserved():
     global current
     reserved = current is not None
     return jsonify(reserved=reserved)
+
 
 @app.route('/update_current', methods=['GET'])
 def update_current():
@@ -218,11 +239,13 @@ def update_current():
     else:
         return jsonify(current.jsonify(request.remote_addr))
 
+
 @app.route('/update_queue', methods=['GET'])
 def update_queue():
     global queue
     jsonQueue = [item.jsonify(request.remote_addr) for item in queue]
     return jsonify(jsonQueue)
+
 
 @app.route('/cancel_request', methods=['DELETE'])
 def cancel_request():
@@ -235,7 +258,7 @@ def cancel_request():
     if current != None and current.ipAddress == requestIpAddress and current.id == requestId:
         requestExists = True
         current = None
-    else: # Check the queue for requests
+    else:  # Check the queue for requests
         for i in range(len(queue)):
             if queue[i].ipAddress == requestIpAddress and queue[i].id == requestId:
                 requestExists = True
@@ -249,14 +272,17 @@ def cancel_request():
     else:
         return jsonify("Could not find reservation"), 404
 
+
 @app.route('/static/<path:path>')
 def static_file(path):
     return send_from_directory('static', path)
+
 
 @app.route('/version', methods=['GET'])
 def version_request():
     gitHash = RetrieveGitRevisionHash()
     return jsonify({"version": gitHash})
+
 
 if __name__ == '__main__':
     UpdateQueueFromFile()
@@ -265,4 +291,4 @@ if __name__ == '__main__':
     scheduler.add_job(func=GitPull, trigger="interval", seconds=600)
     scheduler.start()
     atexit.register(lambda: scheduler.shutdown())
-    app.run(host='0.0.0.0',use_reloader=True)
+    app.run(host='0.0.0.0', use_reloader=True)
