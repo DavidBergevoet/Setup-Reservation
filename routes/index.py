@@ -6,13 +6,14 @@ from entities.reservation_form import ReservationForm
 from handlers.reservation_handler import reservation_handler
 from handlers.config_handler import configuration_handler
 
+
 def index():
     form = ReservationForm()
     if form.validate_on_submit():
         name = form.name.data
         ip_address = request.remote_addr
         datetime_now = defines.floor_datetime(datetime.now())
-        minutes = timedelta(minutes = form.minutes.data)
+        minutes = timedelta(minutes=form.minutes.data)
         # If there are no reservations
         if reservation_handler.current is None and len(reservation_handler.queue) == 0:
             start_time = datetime_now
@@ -27,7 +28,7 @@ def index():
             start_time = queue[0].end_time
         # If the new reservation would not fit between the current and the first reservation
         else:
-            if reservation_handler.current is None:   
+            if reservation_handler.current is None:
                 current_item = reservation_handler.queue[1]
                 next_index = 1
             else:
@@ -49,16 +50,17 @@ def index():
             if not slot_found:
                 start_time = reservation_handler.queue[-1].end_time
 
-        end_time = start_time + timedelta(minutes = form.minutes.data)
-        reservation_handler.queue.append(Reservation(name, ip_address, start_time, end_time))
+        end_time = start_time + timedelta(minutes=form.minutes.data)
+        reservation_handler.queue.append(Reservation(
+            name, ip_address, start_time, end_time))
         reservation_handler.queue.sort(key=lambda x: x.start_time)
         if reservation_handler.current is None:
             reservation_handler.update()
         reservation_handler.to_file()
         return redirect("/")
     else:
-        return render_template('index.html', 
-            form=form, 
-            title=configuration_handler.title(),
-            setup_name=configuration_handler.name(),
-            setup_image=configuration_handler.title_image())
+        return render_template('index.html',
+                               form=form,
+                               title=configuration_handler.title(),
+                               setup_name=configuration_handler.name(),
+                               setup_image=configuration_handler.title_image())

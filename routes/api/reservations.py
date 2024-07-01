@@ -1,9 +1,11 @@
 from flask import jsonify, request
 from handlers.reservation_handler import reservation_handler
 
+
 def update_reserved():
     reserved = reservation_handler.current is not None
     return jsonify(reserved=reserved)
+
 
 def update_current():
     if reservation_handler.current is None:
@@ -11,9 +13,12 @@ def update_current():
     else:
         return jsonify(reservation_handler.current.jsonify(request.remote_addr))
 
+
 def update_queue():
-    json_queue = [item.jsonify(request.remote_addr) for item in reservation_handler.queue]
+    json_queue = [item.jsonify(request.remote_addr)
+                  for item in reservation_handler.queue]
     return jsonify(json_queue)
+
 
 def cancel_request():
     request_id = request.form.get('id')
@@ -22,11 +27,11 @@ def cancel_request():
 
     # Check if the current reservation is canceled
     if reservation_handler.current != None and \
-    reservation_handler.current.ip_address == request_ip_address and \
-    reservation_handler.current.id == request_id:
+            reservation_handler.current.ip_address == request_ip_address and \
+            reservation_handler.current.id == request_id:
         request_exists = True
         reservation_handler.current = None
-    else: # Check the queue for requests
+    else:  # Check the queue for requests
         for i in range(len(reservation_handler.queue)):
             if reservation_handler.queue[i].ip_address == request_ip_address and reservation_handler.queue[i].id == request_id:
                 request_exists = True

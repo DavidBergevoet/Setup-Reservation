@@ -20,10 +20,13 @@ content.init()
 api.init()
 
 if __name__ == '__main__':
-    reservation_handler.reservation_handler.from_file(config_handler.configuration_handler.queue_file_path())
+    reservation_handler.reservation_handler.from_file(
+        config_handler.configuration_handler.queue_file_path())
     scheduler = BackgroundScheduler()
-    scheduler.add_job(func=reservation_handler.reservation_handler.update_time, trigger="interval", seconds=1)
-    scheduler.add_job(func=version_handler.update, trigger="interval", minutes=10)
+    scheduler.add_job(
+        func=reservation_handler.reservation_handler.update_time, trigger="interval", seconds=1)
+    scheduler.add_job(func=version_handler.update,
+                      trigger="interval", minutes=10)
     scheduler.start()
     register(lambda: scheduler.shutdown())
     application.run()
