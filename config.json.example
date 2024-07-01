@@ -1,6 +1,6 @@
 {
 	"title": "Example title",
-	"max_minutes": 60,
+	"maximum_minutes": 60,
 	"setups": [
 		{
 			"name": "Example name",
