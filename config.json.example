@@ -1,0 +1,11 @@
+{
+	"title": "Example title",
+	"max_minutes": 60,
+	"setups": [
+		{
+			"name": "Example name",
+			"queue_file_path": "queue.csv",
+			"title_image": "example.png"
+		}
+	]
+}
