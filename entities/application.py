@@ -11,5 +11,6 @@ def init(root_path, secret_key):
                 static_folder=static_folder_path)
     app.secret_key = secret_key
 
+
 def run():
     app.run(host='0.0.0.0', use_reloader=True)

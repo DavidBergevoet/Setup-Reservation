@@ -13,7 +13,8 @@ config_path = absolute_path + "/config.json"
 config_handler.configuration_handler.load(config_path)
 
 # Initialize application
-application.init(path.abspath(absolute_path), config_handler.configuration_handler.secret_key())
+application.init(path.abspath(absolute_path),
+                 config_handler.configuration_handler.secret_key())
 
 # Initialize routes
 content.init()

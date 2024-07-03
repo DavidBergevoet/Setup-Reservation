@@ -38,7 +38,7 @@ class ConfigurationHandler:
         return self.root["title"]
 
     def secret_key(self):
-    	return self.root["secret_key"]
+        return self.root["secret_key"]
 
     def to_json(self):
         return jsonify(self.setup)
