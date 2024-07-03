@@ -1,6 +1,7 @@
 {
 	"title": "Example title",
 	"maximum_minutes": 60,
+	"secret_key": "secret_key",
 	"setups": [
 		{
 			"name": "Example name",

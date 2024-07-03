@@ -3,7 +3,7 @@ from flask import jsonify
 
 
 class ConfigurationHandler:
-    _required_keys = ["title", "maximum_minutes", "setups"]
+    _required_keys = ["title", "maximum_minutes", "secret_key", "setups"]
     _required_setup_keys = ["name", "queue_file_path", "title_image"]
 
     def load(self, config_file_path):
@@ -37,8 +37,11 @@ class ConfigurationHandler:
     def title(self):
         return self.root["title"]
 
+    def secret_key(self):
+    	return self.root["secret_key"]
+
     def to_json(self):
-        return jsonify(self.data)
+        return jsonify(self.setup)
 
 
 configuration_handler = ConfigurationHandler()
