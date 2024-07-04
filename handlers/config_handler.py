@@ -19,29 +19,29 @@ class ConfigurationHandler:
                 "Setup in config file does not contain all neccessary keys")
 
         # Multiple setups is handled in another issue
-        self.setup = data["setups"][0]
-        self.root = data
+        self._setup = data["setups"][0]
+        self._root = data
 
     def name(self):
-        return self.setup["name"]
+        return self._setup["name"]
 
     def maximum_minutes(self):
-        return self.root["maximum_minutes"]
+        return self._root["maximum_minutes"]
 
     def queue_file_path(self):
-        return self.setup["queue_file_path"]
+        return self._setup["queue_file_path"]
 
     def title_image(self):
-        return self.setup["title_image"]
+        return self._setup["title_image"]
 
     def title(self):
-        return self.root["title"]
+        return self._root["title"]
 
     def secret_key(self):
-        return self.root["secret_key"]
+        return self._root["secret_key"]
 
-    def to_json(self):
-        return jsonify(self.setup)
+    def setup(self):
+        return jsonify(self._setup)
 
 
 configuration_handler = ConfigurationHandler()
