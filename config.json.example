@@ -1,0 +1,12 @@
+{
+	"title": "Example title",
+	"maximum_minutes": 60,
+	"secret_key": "secret_key",
+	"setups": [
+		{
+			"name": "Example name",
+			"queue_file_path": "queue.csv",
+			"title_image": "example.png"
+		}
+	]
+}

@@ -17,7 +17,7 @@ $(() => {
     })
 
     function updateCurrent() {
-        $.get('/update_current', function (data) {
+        $.get('/api/update_current', function (data) {
             roomStatus.removeClass("not-available");
             roomStatus.removeClass("available");
             cancelReservationBtn.addClass("hidden");
@@ -29,12 +29,17 @@ $(() => {
                 roomStatus.text("Setup is not available");
                 reservationInfo.removeClass("hidden");
                 reservationInfo.find('.name').text(data.name);
-                reservationInfo.find('.start-time').text(convertTimeString(data.startTime));
-                reservationInfo.find('.end-time').text(convertTimeString(data.endTime));
-                reservationInfo.find('.remaining-minutes').text(data.minutes);
+                reservationInfo.find('.start-time').text(convertTimeString(data.start_time));
+                reservationInfo.find('.end-time').text(convertTimeString(data.end_time));
+                if (data.minutes == 0) {
+                    reservationInfo.find('.remaining-minutes').text('Less than 1 minute')
+                }
+                else {
+                    reservationInfo.find('.remaining-minutes').text(data.minutes);
+                }
                 cancelReservationBtn.data('request-id', data.id);
 
-                if (data.canCancel) {
+                if (data.can_cancel) {
                     cancelReservationBtn.removeClass("hidden");
                 }
             }
@@ -56,7 +61,7 @@ $(() => {
     }
 
     function updateQueue() {
-        $.get('/update_queue', function (data) {
+        $.get('/api/update_queue', function (data) {
             reservationsBody.empty();
             reservations.addClass("hidden");
             noReservationsMessage.addClass("hidden");
@@ -81,16 +86,16 @@ $(() => {
                 
                 var startTimeColumn = $("<td>");
                 startTimeColumn.data('label', "Start time");
-                startTimeColumn.text(convertTimeString(reservation.startTime));
+                startTimeColumn.text(convertTimeString(reservation.start_time));
                 tableRow.append(startTimeColumn);
 
                 
                 var endTimeColumn = $("<td>");
                 endTimeColumn.data('label', "End time");
-                endTimeColumn.text(convertTimeString(reservation.endTime));
+                endTimeColumn.text(convertTimeString(reservation.end_time));
                 tableRow.append(endTimeColumn);
 
-                if (reservation.canCancel) {
+                if (reservation.can_cancel) {
                     var cancelColumn = $("<td>");
                     cancelColumn.data('label', "Action");
                     var cancelButton = $("<button>Cancel</button>");
@@ -112,7 +117,7 @@ $(() => {
     }
 
     function updateVersion() {
-        $.get('/version', function (data) {
+        $.get('/api/version', function (data) {
             if (serverVersion) {
                 if (serverVersion != data.version) {
                     location.reload(true);
@@ -125,7 +130,7 @@ $(() => {
 
     function cancelRequest(identifier) {
         $.ajax({
-            url: '/cancel_request',
+            url: '/api/cancel_request',
             type: 'DELETE',
             data: { id: identifier },
             success: function (response) {
@@ -142,7 +147,6 @@ $(() => {
         updateQueue();
         updateVersion();
     }
-
     update();
     setInterval(update, 10000);
 })
