@@ -2,6 +2,6 @@
 __pycache__/
 
 # Client specific files
-*.csv
-static/title_images
-config.json
+src/*.csv
+src/static/title_images
+src/config.json
