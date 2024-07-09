@@ -25,7 +25,7 @@ def index():
             start_time = datetime_now
         # If there is no current reservation, and there is only one reservation in the queue
         elif reservation_handler.current is None and len(reservation_handler.queue) == 1:
-            start_time = queue[0].end_time
+            start_time = reservation_handler.queue[0].end_time
         # If the new reservation would not fit between the current and the first reservation
         else:
             if reservation_handler.current is None:
